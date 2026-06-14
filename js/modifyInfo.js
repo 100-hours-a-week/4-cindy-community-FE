@@ -3,7 +3,6 @@ import Header from '../component/header/header.js';
 import {
     prependChild,
     getServerUrl,
-    resolveImageUrl,
     validNickname,
 } from '../utils/function.js';
 import {
@@ -11,7 +10,11 @@ import {
     userModify,
     userDelete,
 } from '../api/modifyInfoRequest.js';
-import { getProfileImage } from '../api/profileImageRequest.js';
+import {
+    deleteProfileImage,
+    getProfileImage,
+    updateProfileImage,
+} from '../api/profileImageRequest.js';
 import { requestJson } from '../utils/request.js';
 
 const emailTextElement = document.querySelector('#id');
@@ -35,10 +38,12 @@ const changeData = {
     nickname: '',
     profileImageUrl: null,
 };
+let selectedProfileFile = null;
+let isProfileRemoved = false;
+let previewObjectUrl = null;
 
 const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
 const HTTP_OK = 200;
-const HTTP_CREATED = 201;
 
 const setData = data => {
     //프로필 이미지 조회 실패 시 기본 이미지로 대체
@@ -99,44 +104,24 @@ const changeEventHandler = async (event, uid) => {
             changeData.nickname = authData.data.nickname;
         }
     } else if (uid == 'profile') {
-        // 사용자가 선택한 파일
+        //1.사용자가 선택한 파일 확인
         const file = event.target.files[0];
-        console.log(changeData.profileImageUrl);
         if (!file) {
-            localStorage.removeItem('profileImageUrl');
-            profilePreview.src = DEFAULT_PROFILE_IMAGE;
-            changeData.profileImageUrl = null;
-            if (removeProfileButton) removeProfileButton.style.display = 'none';
-        } else {
-            const formData = new FormData();
-            formData.append('profileImage', file);
-
-            // 파일 업로드를 위한 POST 요청 실행
-            try {
-                const { ok, data } = await requestJson(
-                    `${getServerUrl()}/v1/users/upload/profile-image`,
-                    {
-                        method: 'POST',
-                        body: formData,
-                    },
-                );
-
-                if (!ok) throw new Error('서버 응답 오류');
-                localStorage.setItem(
-                    'profileImageUrl',
-                    data.profileImageUrl,
-                );
-                changeData.profileImageUrl = data.profileImageUrl;
-                profilePreview.src = resolveImageUrl(
-                    data.profileImageUrl,
-                    DEFAULT_PROFILE_IMAGE,
-                );
-                if (removeProfileButton)
-                    removeProfileButton.style.display = 'flex';
-            } catch (error) {
-                console.error('업로드 중 오류 발생:', error);
-            }
+            return;
         }
+
+        //2.기존 미리보기 URL 정리
+        if (previewObjectUrl) {
+            URL.revokeObjectURL(previewObjectUrl);
+        }
+
+        //3.선택한 이미지는 서버 전송 전까지 미리보기만 표시
+        selectedProfileFile = file;
+        isProfileRemoved = false;
+        previewObjectUrl = URL.createObjectURL(file);
+        changeData.profileImageUrl = previewObjectUrl;
+        profilePreview.src = previewObjectUrl;
+        if (removeProfileButton) removeProfileButton.style.display = 'flex';
     }
     observeData();
 };
@@ -148,14 +133,45 @@ const sendModifyData = async () => {
         if (changeData.nickname === '') {
             Dialog('필수 정보 누락', '닉네임을 입력해주세요.');
         } else {
-            const { status } = await userModify(changeData);
+            const userId = localStorage.getItem('userId');
+            let isSuccess = true;
 
-            if (status === HTTP_CREATED) {
-                localStorage.removeItem('profileImageUrl');
+            //1.닉네임이 변경된 경우 회원정보 수정 요청
+            if (authData.data.nickname !== changeData.nickname) {
+                const nicknameResult = await userModify(
+                    userId,
+                    changeData.nickname,
+                );
+                isSuccess = nicknameResult.ok;
+
+                if (
+                    !nicknameResult.ok &&
+                    nicknameResult.code === 'NICKNAME_DUPLICATED'
+                ) {
+                    nicknameHelpElement.textContent = '*중복된 닉네임 입니다.';
+                    return;
+                }
+            }
+
+            //2.새 프로필 이미지를 선택한 경우 이미지 수정 요청
+            if (isSuccess && selectedProfileFile) {
+                const profileResult = await updateProfileImage(
+                    userId,
+                    selectedProfileFile,
+                );
+                isSuccess = profileResult.ok;
+            }
+
+            //3.기존 프로필 이미지를 제거한 경우 이미지 삭제 요청
+            if (isSuccess && isProfileRemoved) {
+                const profileResult = await deleteProfileImage(userId);
+                isSuccess = profileResult.ok;
+            }
+
+            if (isSuccess) {
                 saveToastMessage('수정완료');
                 location.href = '/html/modifyInfo.html';
             } else {
-                localStorage.removeItem('profileImageUrl');
                 saveToastMessage('수정실패');
                 location.href = '/html/modifyInfo.html';
             }
@@ -199,8 +215,14 @@ const addEvent = () => {
     );
     if (removeProfileButton) {
         removeProfileButton.addEventListener('click', () => {
-            localStorage.removeItem('profileImageUrl');
+            if (previewObjectUrl) {
+                URL.revokeObjectURL(previewObjectUrl);
+                previewObjectUrl = null;
+            }
+
             profilePreview.src = DEFAULT_PROFILE_IMAGE;
+            selectedProfileFile = null;
+            isProfileRemoved = authData.data.profileImageUrl !== null;
             changeData.profileImageUrl = null;
             profileInputElement.value = '';
             removeProfileButton.style.display = 'none';

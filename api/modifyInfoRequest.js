@@ -9,14 +9,14 @@ export const getUserInfo = async userId => {
     });
 };
 
-export const userModify = async changeData => {
-    const result = await requestJson(`${getServerUrl()}/v1/users/me`, {
-        method: 'PUT',
+export const userModify = async (userId, nickname) => {
+    const result = await requestJson(`${getServerUrl()}/users/${userId}`, {
+        method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(changeData),
+        body: JSON.stringify({ nickname }),
     });
     return result;
 };
