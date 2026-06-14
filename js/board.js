@@ -43,8 +43,9 @@ const getQueryString = name => {
 
 const getBoardDetail = async postId => {
     const { ok, data } = await getPost(postId);
-    if (!ok)
-        return new Error('게시글 정보를 가져오는데 실패하였습니다.');
+    if (!ok) {
+        throw new Error('게시글 정보를 가져오는데 실패하였습니다.');
+    }
     return data;
 };
 
@@ -105,7 +106,7 @@ const setBoardDetail = (data, postImages) => {
     let isLiked = Boolean(data.isLiked);
     let isLikeLoading = false;
 
-    likeCountElement.textContent = formatCount(data.likeCount);
+    likeCountElement.textContent = formatCount(data.likeCount ?? 0);
     setLikeButtonState(likeButtonElement, isLiked);
 
     likeButtonElement.addEventListener('click', async () => {
@@ -115,7 +116,7 @@ const setBoardDetail = (data, postImages) => {
         try {
             if (!isLiked) {
                 const { ok, status, code, data: likeData } = await likePost(
-                    data.id,
+                    data.postId,
                 );
                 if (ok) {
                     isLiked = true;
@@ -135,7 +136,7 @@ const setBoardDetail = (data, postImages) => {
                 }
             } else {
                 const { ok, status, code, data: likeData } = await unlikePost(
-                    data.id,
+                    data.postId,
                 );
                 if (ok) {
                     isLiked = false;
@@ -160,10 +161,10 @@ const setBoardDetail = (data, postImages) => {
     });
 
     const viewCountElement = document.querySelector('.viewCount h3');
-    viewCountElement.textContent = formatCount(data.viewCount);
+    viewCountElement.textContent = formatCount(data.views);
 
     const commentCountElement = document.querySelector('.commentCount h3');
-    commentCountElement.textContent = data.commentCount.toLocaleString();
+    commentCountElement.textContent = (data.commentCount ?? 0).toLocaleString();
 };
 
 const setBoardModify = async (data, myInfo) => {
@@ -190,7 +191,7 @@ const setBoardModify = async (data, myInfo) => {
 
         const modifyBtnElement2 = document.querySelector('#modifyBtn');
         modifyBtnElement2.addEventListener('click', () => {
-            window.location.href = `/html/board-modify.html?postId=${data.id}`;
+            window.location.href = `/html/board-modify.html?postId=${data.postId}`;
         });
     }
 };
