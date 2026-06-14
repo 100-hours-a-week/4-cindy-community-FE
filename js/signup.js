@@ -1,28 +1,23 @@
 import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
 import {
-    authCheckReverse,
     prependChild,
     validEmail,
     validPassword,
     validNickname,
 } from '../utils/function.js';
-import {
-    userSignup,
-    checkEmail,
-    checkNickname,
-    fileUpload,
-} from '../api/signupRequest.js';
+import { userSignup, fileUpload } from '../api/signupRequest.js';
 
 const MAX_PASSWORD_LENGTH = 20;
-const HTTP_OK = 200;
 const HTTP_CREATED = 201;
 
 const signupData = {
     email: '',
     password: '',
     nickname: '',
-    profileImageUrl: undefined,
+    jpgPath: null,
+    webpPath: null,
+    thumbnailPath: null,
 };
 
 const getSignupData = () => {
@@ -37,33 +32,38 @@ const getSignupData = () => {
 
 const sendSignupData = async () => {
     const { passwordCheck, ...props } = signupData;
-    if (localStorage.getItem('profileImageUrl')) {
-        props.profileImageUrl = localStorage.getItem('profileImageUrl');
-    }
 
-    if (props.password > MAX_PASSWORD_LENGTH) {
+    if (props.password.length > MAX_PASSWORD_LENGTH) {
         Dialog('비밀번호', '비밀번호는 20자 이하로 입력해주세요.');
         return;
     }
-    // signupData를 서버로 전송
-    const { status, code } = await userSignup(props);
 
-    // 응답이 성공적으로 왔을 경우
-    if (status === HTTP_CREATED) {
-        localStorage.removeItem('profileImageUrl');
-        location.href = '/html/login.html';
-    } else {
-        if (code === 'ALREADY_EXIST_EMAIL') {
-            Dialog('회원 가입 실패', '이미 사용 중인 이메일입니다.');
-        } else if (code === 'ALREADY_EXIST_NICKNAME') {
-            Dialog('회원 가입 실패', '이미 사용 중인 닉네임입니다.');
-        } else if (code === 'INVALID_INPUT') {
-            Dialog('회원 가입 실패', '입력값을 확인해주세요.');
+    try {
+        // signupData를 서버로 전송
+        const { status, code, body } = await userSignup(props);
+
+        // 응답이 성공적으로 왔을 경우
+        if (status === HTTP_CREATED) {
+            location.href = '/html/login.html';
         } else {
-            Dialog('회원 가입 실패', '잠시 뒤 다시 시도해 주세요', () => {});
+            if (code === 'EMAIL_DUPLICATED') {
+                Dialog('회원 가입 실패', '이미 사용 중인 이메일입니다.');
+            } else if (code === 'NICKNAME_DUPLICATED') {
+                Dialog('회원 가입 실패', '이미 사용 중인 닉네임입니다.');
+            } else if (code === 'VALIDATION_FAILED') {
+                Dialog('회원 가입 실패', '입력값을 확인해주세요.');
+            } else {
+                Dialog(
+                    '회원 가입 실패',
+                    body && body.message
+                        ? body.message
+                        : '잠시 뒤 다시 시도해 주세요.',
+                );
+            }
         }
-        localStorage.removeItem('profileImageUrl');
-        location.href = '/html/signup.html';
+    } catch (error) {
+        console.error('회원가입 요청 중 오류 발생:', error);
+        Dialog('회원 가입 실패', '서버에 연결할 수 없습니다.');
     }
 };
 
@@ -103,13 +103,8 @@ const inputEventHandler = async (event, uid) => {
             helperElement.textContent =
                 '*올바른 이메일 주소 형식을 입력해주세요. (예: example@example.com)';
         } else {
-            const { status } = await checkEmail(value);
-            if (status === HTTP_OK) {
-                helperElement.textContent = '';
-                isComplete = true;
-            } else {
-                helperElement.textContent = '*중복된 이메일 입니다.';
-            }
+            helperElement.textContent = '';
+            isComplete = true;
         }
         if (isComplete) {
             signupData.email = value;
@@ -131,13 +126,21 @@ const inputEventHandler = async (event, uid) => {
         if (value == '' || value == null) {
             helperElement.textContent = '*비밀번호를 입력해주세요.';
             helperElementCheck.textContent = '';
+            signupData.password = '';
+            signupData.passwordCheck = '';
         } else if (!isValidPassword) {
             helperElement.textContent =
                 '*비밀번호는 8자 이상, 20자 이하이며, 대문자, 소문자, 숫자, 특수문자를 각각 최소 1개 포함해야 합니다.';
             helperElementCheck.textContent = '';
+            signupData.password = '';
+            signupData.passwordCheck = '';
         } else {
             helperElement.textContent = '';
             signupData.password = value;
+
+            if (signupData.passwordCheck !== value) {
+                signupData.passwordCheck = '';
+            }
         }
     } else if (uid == 'pwck') {
         const value = event.target.value;
@@ -149,8 +152,10 @@ const inputEventHandler = async (event, uid) => {
 
         if (value == '' || value == null) {
             helperElement.textContent = '*비밀번호 한번 더 입력해주세요.';
+            signupData.passwordCheck = '';
         } else if (password !== value) {
             helperElement.textContent = '*비밀번호가 다릅니다.';
+            signupData.passwordCheck = '';
         } else {
             signupData.passwordCheck = value;
             helperElement.textContent = '';
@@ -174,14 +179,8 @@ const inputEventHandler = async (event, uid) => {
             helperElement.textContent =
                 '*닉네임에 특수 문자는 사용할 수 없습니다.';
         } else {
-            const { status } = await checkNickname(value);
-
-            if (status === HTTP_OK) {
-                helperElement.textContent = '';
-                isComplete = true;
-            } else {
-                helperElement.textContent = '*중복된 닉네임 입니다.';
-            }
+            helperElement.textContent = '';
+            isComplete = true;
         }
 
         if (isComplete) {
@@ -241,24 +240,26 @@ const uploadProfileImage = () => {
             }
 
             const formData = new FormData();
-            formData.append('profileImage', file);
+            formData.append('file', file);
 
             // 파일 업로드를 위한 POST 요청 실행
             try {
                 const { ok, data } = await fileUpload(formData);
                 if (!ok) throw new Error('서버 응답 오류');
-                localStorage.setItem(
-                    'profileImageUrl',
-                    data.profileImageUrl,
-                );
+                signupData.jpgPath = data.jpgPath;
+                signupData.webpPath = data.webpPath;
+                signupData.thumbnailPath = data.thumbnailPath;
             } catch (error) {
                 console.error('업로드 중 오류 발생:', error);
+                signupData.jpgPath = null;
+                signupData.webpPath = null;
+                signupData.thumbnailPath = null;
+                Dialog('이미지 업로드 실패', '이미지 파일을 확인해주세요.');
             }
         });
 };
 
 const init = async () => {
-    await authCheckReverse();
     prependChild(document.body, Header('커뮤니티', 1));
     observeSignupData();
     addEventForInputElements();

@@ -2,8 +2,9 @@ import { getServerUrl } from '../utils/function.js';
 import { requestJson } from '../utils/request.js';
 
 export const userSignup = async data => {
-    const result = await requestJson(`${getServerUrl()}/v1/auth/signup`, {
+    const result = await requestJson(`${getServerUrl()}/users`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -12,38 +13,13 @@ export const userSignup = async data => {
     return result;
 };
 
-export const checkEmail = async email => {
+export const fileUpload = async formData => {
     const result = await requestJson(
-        `${getServerUrl()}/v1/users/email/check?email=${email}`,
-        {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        },
-    );
-    return result;
-};
-
-export const checkNickname = async nickname => {
-    const result = await requestJson(
-        `${getServerUrl()}/v1/users/nickname/check?nickname=${nickname}`,
-        {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        },
-    );
-    return result;
-};
-
-export const fileUpload = async file => {
-    const result = await requestJson(
-        `${getServerUrl()}/v1/users/upload/profile-image`,
+        `${getServerUrl()}/images/profile`,
         {
             method: 'POST',
-            body: file,
+            credentials: 'include',
+            body: formData,
         },
     );
     return result;
