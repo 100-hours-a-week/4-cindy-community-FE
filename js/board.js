@@ -10,6 +10,7 @@ import {
 } from '../utils/function.js';
 import {
     getPost,
+    getPostImages,
     deletePost,
     writeComment,
     getComments,
@@ -47,7 +48,13 @@ const getBoardDetail = async postId => {
     return data;
 };
 
-const setBoardDetail = data => {
+const getBoardImages = async postId => {
+    const { ok, data } = await getPostImages(postId);
+    if (!ok || !Array.isArray(data)) return [];
+    return data;
+};
+
+const setBoardDetail = (data, postImages) => {
     // 헤드 정보
     const titleElement = document.querySelector('.title');
     const createdAtElement = document.querySelector('.createdAt');
@@ -68,13 +75,28 @@ const setBoardDetail = data => {
 
     // 바디 정보
     const contentImgElement = document.querySelector('.contentImg');
-    const fileUrl = data.fileUrl || resolveImageUrl(data.filePath);
-    if (fileUrl) {
-        console.log(fileUrl);
+    postImages.forEach((image, index) => {
+        const jpgUrl = resolveImageUrl(image.jpgUrl);
+        const webpUrl = resolveImageUrl(image.webpUrl);
+        if (!jpgUrl && !webpUrl) return;
+
+        //webp 이미지를 우선 조회하고 지원하지 않으면 jpg 이미지 사용
+        const picture = document.createElement('picture');
+        if (webpUrl) {
+            const source = document.createElement('source');
+            source.srcset = webpUrl;
+            source.type = 'image/webp';
+            picture.appendChild(source);
+        }
+
         const img = document.createElement('img');
-        img.src = fileUrl;
-        contentImgElement.appendChild(img);
-    }
+        img.src = jpgUrl || webpUrl;
+        img.alt = `${data.title} 이미지 ${index + 1}`;
+        img.loading = 'lazy';
+        picture.appendChild(img);
+        contentImgElement.appendChild(picture);
+    });
+
     const contentElement = document.querySelector('.content');
     contentElement.textContent = data.content;
 
@@ -258,12 +280,16 @@ const init = async () => {
 
         const pageId = getQueryString('id');
 
-        const pageData = await getBoardDetail(pageId);
+        //게시글 상세 정보와 연결된 이미지 목록 조회
+        const [pageData, postImages] = await Promise.all([
+            getBoardDetail(pageId),
+            getBoardImages(pageId),
+        ]);
 
         if (parseInt(pageData.userId, 10) === parseInt(myInfo.userId, 10)) {
             setBoardModify(pageData, myInfo);
         }
-        setBoardDetail(pageData);
+        setBoardDetail(pageData, postImages);
 
         getBoardComment(pageId).then(data => setBoardComment(data, myInfo));
     } catch (error) {

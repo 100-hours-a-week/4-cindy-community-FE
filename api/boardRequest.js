@@ -8,6 +8,13 @@ export const getPost = postId => {
     return result;
 };
 
+export const getPostImages = postId => {
+    const result = requestJson(`${getServerUrl()}/posts/${postId}/images`, {
+        credentials: 'include',
+    });
+    return result;
+};
+
 export const deletePost = async postId => {
     const result = await requestJson(`${getServerUrl()}/v1/posts/${postId}`, {
         method: 'DELETE',

@@ -97,7 +97,24 @@
     width: 100%;
     word-wrap: break-word;
 }
+.body .contentImg {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 240px), 1fr)
+    );
+    gap: 12px;
+}
+
+.body .contentImg picture {
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
 .body .contentImg img {
+    width: 100%;
     max-width: 100%;
     max-height: 306px;
 
