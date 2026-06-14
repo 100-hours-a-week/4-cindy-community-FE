@@ -23,7 +23,10 @@ export const resolveImageUrl = (url, fallback = null) => {
 };
 
 export const serverSessionCheck = async () => {
-    const res = await fetch(`${getServerUrl()}/v1/auth/check`, {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return null;
+
+    const res = await fetch(`${getServerUrl()}/users/${userId}`, {
         method: 'GET',
         credentials: 'include',
     });
@@ -41,8 +44,10 @@ export const authCheck = async () => {
 export const authCheckReverse = async () => {
     const response = await serverSessionCheck();
     if (response && response.ok) {
-        location.href = '/';
+        location.href = '/html/index.html';
+        return true;
     }
+    return false;
 };
 // 이메일 유효성 검사
 export const validEmail = email => {

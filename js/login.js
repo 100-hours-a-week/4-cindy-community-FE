@@ -7,7 +7,8 @@ import {
 import { userLogin } from '../api/loginRequest.js';
 
 const HTTP_OK = 200;
-const MAX_PASSWORD_LENGTH = 8;
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 20;
 
 const loginData = {
     id: '',
@@ -22,27 +23,36 @@ const loginClick = async () => {
     const { id: email, password } = loginData;
     const helperTextElement = document.querySelector('.helperText');
 
-    const { ok, status, code } = await userLogin(email, password);
-    if (!ok) {
-        updateHelperText(
-            helperTextElement,
-            code === 'INVALID_INPUT'
-                ? '*입력값을 확인해주세요.'
-                : '*입력하신 계정 정보가 정확하지 않았습니다.',
-        );
-        return;
-    }
+    try {
+        const { ok, status, code, data } = await userLogin(email, password);
+        if (!ok) {
+            updateHelperText(
+                helperTextElement,
+                code === 'VALIDATION_FAILED'
+                    ? '*입력값을 확인해주세요.'
+                    : '*입력하신 계정 정보가 정확하지 않았습니다.',
+            );
+            return;
+        }
 
-    if (status !== HTTP_OK) {
-        updateHelperText(
-            helperTextElement,
-            '*입력하신 계정 정보가 정확하지 않았습니다.',
-        );
-        return;
-    }
-    updateHelperText(helperTextElement);
+        if (status !== HTTP_OK) {
+            updateHelperText(
+                helperTextElement,
+                '*입력하신 계정 정보가 정확하지 않았습니다.',
+            );
+            return;
+        }
 
-    location.href = '/html/index.html';
+        //로그인한 유저 정보를 인증 확인에 사용
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('nickname', data.nickname);
+        updateHelperText(helperTextElement);
+
+        location.href = '/html/index.html';
+    } catch (error) {
+        console.error('로그인 요청 중 오류 발생:', error);
+        updateHelperText(helperTextElement, '*서버에 연결할 수 없습니다.');
+    }
 };
 
 const observeSignupData = () => {
@@ -62,7 +72,8 @@ const observeSignupData = () => {
         email &&
         isValidEmail &&
         password &&
-        password.length >= MAX_PASSWORD_LENGTH
+        password.length >= MIN_PASSWORD_LENGTH &&
+        password.length <= MAX_PASSWORD_LENGTH
     );
     button.style.backgroundColor = button.disabled ? '#ACA0EB' : '#7F6AEE';
 };
@@ -123,7 +134,9 @@ const lottieAnimation = type => {
 };
 
 const init = async () => {
-    await authCheckReverse();
+    const isAuthenticated = await authCheckReverse();
+    if (isAuthenticated) return;
+
     observeSignupData();
     prependChild(document.body, Header('커뮤니티', 0));
     eventSet();
