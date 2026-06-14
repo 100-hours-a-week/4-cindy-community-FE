@@ -30,7 +30,7 @@ export const writeComment = async (pageId, comment) => {
             'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ commentContent: comment }),
+        body: JSON.stringify({ content: comment }),
     });
     return result;
 };

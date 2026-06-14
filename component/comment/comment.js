@@ -3,22 +3,29 @@ import Dialog from '../dialog/dialog.js';
 import { deleteComment, updateComment } from '../../api/commentRequest.js';
 
 const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
-const HTTP_OK = 200;
+const MAX_COMMENT_LENGTH = 255;
 
-const CommentItem = (data, writerId, postId, commentId) => {
+const CommentItem = (
+    data,
+    writerId,
+    postId,
+    loginUserProfileImage,
+) => {
     const CommentDelete = () => {
         Dialog(
             '댓글을 삭제하시겠습니까?',
             '삭제한 내용은 복구 할 수 없습니다.',
             async () => {
-                const { ok, status } = await deleteComment(postId, commentId);
+                const { ok } = await deleteComment(
+                    postId,
+                    data.commentId,
+                );
                 if (!ok) {
                     Dialog('삭제 실패', '댓글 삭제에 실패하였습니다.');
                     return;
                 }
 
-                if (status === HTTP_OK)
-                    location.href = '/html/board.html?id=' + postId;
+                location.href = '/html/board.html?id=' + postId;
             },
         );
     };
@@ -34,15 +41,16 @@ const CommentItem = (data, writerId, postId, commentId) => {
         const textarea = document.createElement('textarea');
         textarea.className = 'commentEditTextarea';
         textarea.value = originalContent;
-        textarea.maxLength = 1500; // 최대 글자 수 제한
+        textarea.maxLength = MAX_COMMENT_LENGTH;
 
         // 사용자가 입력할 때마다 글자 수 체크
         textarea.addEventListener('input', () => {
-            if (textarea.value.length > 1500) {
-                // 1500자를 초과하는 경우, 초과분을 자름
-                textarea.value = textarea.value.substring(0, 1500);
-                // 사용자에게 경고 메시지를 보여주는 방법도 고려할 수 있음
-                // alert('댓글은 1500자를 초과할 수 없습니다.');
+            if (textarea.value.length > MAX_COMMENT_LENGTH) {
+                //백엔드와 동일하게 댓글은 최대 255자까지 입력
+                textarea.value = textarea.value.substring(
+                    0,
+                    MAX_COMMENT_LENGTH,
+                );
             }
         });
 
@@ -63,11 +71,12 @@ const CommentItem = (data, writerId, postId, commentId) => {
             }
             // 서버로 수정된 댓글 내용 전송하는 로직
             const updatedContent = textarea.value;
-            const sendData = {
-                commentContent: updatedContent,
-            };
 
-            const { ok } = await updateComment(postId, commentId, sendData);
+            const { ok } = await updateComment(
+                postId,
+                data.commentId,
+                updatedContent,
+            );
             if (!ok)
                 return Dialog('수정 실패', '댓글 수정에 실패하였습니다.');
 
@@ -100,10 +109,17 @@ const CommentItem = (data, writerId, postId, commentId) => {
 
     const img = document.createElement('img');
     img.className = 'commentImg';
+    const isMyComment =
+        parseInt(data.userId, 10) === parseInt(writerId, 10);
     img.src = resolveImageUrl(
-        data.author && data.author.profileImageUrl,
+        isMyComment ? loginUserProfileImage : null,
         DEFAULT_PROFILE_IMAGE,
     );
+    //프로필 이미지 조회 실패 시 기본 이미지로 대체
+    img.onerror = () => {
+        img.onerror = null;
+        img.src = DEFAULT_PROFILE_IMAGE;
+    };
     picture.appendChild(img);
 
     const commentInfoWrap = document.createElement('div');
@@ -113,7 +129,7 @@ const CommentItem = (data, writerId, postId, commentId) => {
     infoDiv.className = 'commentInfoHeader';
 
     const h3 = document.createElement('h3');
-    h3.textContent = data.author ? data.author.nickname : '';
+    h3.textContent = data.nickname;
     infoDiv.appendChild(h3);
 
     const h4 = document.createElement('h4');
@@ -122,10 +138,7 @@ const CommentItem = (data, writerId, postId, commentId) => {
     h4.textContent = formattedDate;
     infoDiv.appendChild(h4);
 
-    if (
-        data.author &&
-        parseInt(data.author.userId, 10) === parseInt(writerId, 10)
-    ) {
+    if (isMyComment) {
         const buttonWrap = document.createElement('span');
 
         const deleteButton = document.createElement('button');

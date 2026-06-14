@@ -17,9 +17,10 @@ import {
     likePost,
     unlikePost,
 } from '../api/boardRequest.js';
+import { getProfileImage } from '../api/profileImageRequest.js';
 
 const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
-const MAX_COMMENT_LENGTH = 1000;
+const MAX_COMMENT_LENGTH = 255;
 const HTTP_NOT_AUTHORIZED = 401;
 const HTTP_OK = 200;
 
@@ -55,7 +56,7 @@ const getBoardImages = async postId => {
     return data;
 };
 
-const setBoardDetail = (data, postImages) => {
+const setBoardDetail = (data, postImages, writerProfileImage) => {
     // 헤드 정보
     const titleElement = document.querySelector('.title');
     const createdAtElement = document.querySelector('.createdAt');
@@ -68,9 +69,14 @@ const setBoardDetail = (data, postImages) => {
     createdAtElement.textContent = formattedDate;
 
     imgElement.src = resolveImageUrl(
-        data.profileImage,
+        writerProfileImage,
         DEFAULT_PROFILE_IMAGE,
     );
+    //프로필 이미지 조회 실패 시 기본 이미지로 대체
+    imgElement.onerror = () => {
+        imgElement.onerror = null;
+        imgElement.src = DEFAULT_PROFILE_IMAGE;
+    };
 
     nicknameElement.textContent = data.nickname;
 
@@ -167,60 +173,73 @@ const setBoardDetail = (data, postImages) => {
     commentCountElement.textContent = (data.commentCount ?? 0).toLocaleString();
 };
 
-const setBoardModify = async (data, myInfo) => {
-    if (myInfo.idx === data.writerId) {
-        const modifyElement = document.querySelector('.hidden');
-        modifyElement.classList.remove('hidden');
+const setBoardModify = async data => {
+    const modifyElement = document.querySelector('.hidden');
+    modifyElement.classList.remove('hidden');
 
-        const modifyBtnElement = document.querySelector('#deleteBtn');
-        const postId = getQueryString('id');
-        modifyBtnElement.addEventListener('click', () => {
-            Dialog(
-                '게시글을 삭제하시겠습니까?',
-                '삭제한 내용은 복구 할 수 없습니다.',
-                async () => {
-                    const { ok } = await deletePost(postId);
-                    if (ok) {
-                        window.location.href = '/';
-                    } else {
-                        Dialog('삭제 실패', '게시글 삭제에 실패하였습니다.');
-                    }
-                },
-            );
-        });
+    const modifyBtnElement = document.querySelector('#deleteBtn');
+    const postId = getQueryString('id');
+    modifyBtnElement.addEventListener('click', () => {
+        Dialog(
+            '게시글을 삭제하시겠습니까?',
+            '삭제한 내용은 복구 할 수 없습니다.',
+            async () => {
+                const { ok } = await deletePost(postId);
+                if (ok) {
+                    window.location.href = '/';
+                } else {
+                    Dialog('삭제 실패', '게시글 삭제에 실패하였습니다.');
+                }
+            },
+        );
+    });
 
-        const modifyBtnElement2 = document.querySelector('#modifyBtn');
-        modifyBtnElement2.addEventListener('click', () => {
-            window.location.href = `/html/board-modify.html?postId=${data.postId}`;
-        });
-    }
+    const modifyBtnElement2 = document.querySelector('#modifyBtn');
+    modifyBtnElement2.addEventListener('click', () => {
+        window.location.href = `/html/board-modify.html?postId=${data.postId}`;
+    });
 };
 
-const getBoardComment = async id => {
-    const { ok, status, data } = await getComments(id);
-    if (!ok) return [];
-    if (status !== HTTP_OK) return [];
+const getBoardComment = async postId => {
+    const { ok, data } = await getComments(postId);
+    if (!ok || !Array.isArray(data)) {
+        throw new Error('댓글 정보를 가져오는데 실패하였습니다.');
+    }
     return data;
 };
 
-const setBoardComment = (data, myInfo) => {
+const setBoardComment = (
+    data,
+    myInfo,
+    postId,
+    loginUserProfileImage,
+) => {
     const commentListElement = document.querySelector('.commentList');
     if (commentListElement) {
-        data.map(event => {
+        data.forEach(event => {
             const item = CommentItem(
                 event,
                 myInfo.userId,
-                event.postId,
-                event.id,
+                postId,
+                loginUserProfileImage,
             );
             commentListElement.appendChild(item);
         });
     }
+
+    //조회한 댓글 목록의 개수 표시
+    const commentCountElement = document.querySelector('.commentCount h3');
+    commentCountElement.textContent = data.length.toLocaleString();
 };
 
 const addComment = async () => {
-    const comment = document.querySelector('textarea').value;
+    const comment = document.querySelector('textarea').value.trim();
     const pageId = getQueryString('id');
+
+    if (!comment) {
+        Dialog('댓글 등록 실패', '댓글은 1자 이상 입력해주세요.');
+        return;
+    }
 
     const { ok } = await writeComment(pageId, comment);
 
@@ -243,7 +262,7 @@ const inputComment = async () => {
             MAX_COMMENT_LENGTH,
         );
     }
-    if (textareaElement.value === '') {
+    if (textareaElement.value.trim() === '') {
         commentBtnElement.disabled = true;
         commentBtnElement.style.backgroundColor = '#ACA0EB';
     } else {
@@ -272,10 +291,12 @@ const init = async () => {
         if (data.status === HTTP_NOT_AUTHORIZED) {
             window.location.href = '/html/login.html';
         }
-        const profileImage = resolveImageUrl(
-            myInfo.profileImageUrl,
-            DEFAULT_PROFILE_IMAGE,
-        );
+        //헤더에서 사용할 로그인 유저의 프로필 썸네일 조회
+        const profileImageResult = await getProfileImage(myInfo.userId);
+        const profileImage =
+            profileImageResult.ok && profileImageResult.data.thumbnailUrl
+                ? profileImageResult.data.thumbnailUrl
+                : DEFAULT_PROFILE_IMAGE;
 
         prependChild(document.body, Header('커뮤니티', 2, profileImage));
 
@@ -287,12 +308,19 @@ const init = async () => {
             getBoardImages(pageId),
         ]);
 
-        if (parseInt(pageData.userId, 10) === parseInt(myInfo.userId, 10)) {
-            setBoardModify(pageData, myInfo);
+        const isMyPost = pageData.nickname === myInfo.nickname;
+        if (isMyPost) {
+            setBoardModify(pageData);
         }
-        setBoardDetail(pageData, postImages);
+        setBoardDetail(
+            pageData,
+            postImages,
+            isMyPost ? profileImage : null,
+        );
 
-        getBoardComment(pageId).then(data => setBoardComment(data, myInfo));
+        //게시글에 작성된 댓글 목록 조회
+        const comments = await getBoardComment(pageId);
+        setBoardComment(comments, myInfo, pageId, profileImage);
     } catch (error) {
         console.error(error);
     }
