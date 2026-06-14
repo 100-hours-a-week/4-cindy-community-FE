@@ -2,7 +2,7 @@ import { getServerUrl } from '../utils/function.js';
 import { requestJson } from '../utils/request.js';
 
 export const createPost = boardData => {
-    const result = requestJson(`${getServerUrl()}/v1/posts`, {
+    const result = requestJson(`${getServerUrl()}/posts`, {
         method: 'POST',
         body: JSON.stringify(boardData),
         headers: {
@@ -27,8 +27,9 @@ export const updatePost = (postId, boardData) => {
 };
 
 export const fileUpload = formData => {
-    const result = requestJson(getServerUrl() + '/v1/posts/upload/attach-file', {
+    const result = requestJson(`${getServerUrl()}/images/post`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
     });
 

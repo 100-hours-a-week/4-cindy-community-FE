@@ -3,7 +3,6 @@ import Header from '../component/header/header.js';
 import {
     authCheck,
     getQueryString,
-    getServerUrl,
     prependChild,
     resolveImageUrl,
 } from '../utils/function.js';
@@ -13,6 +12,7 @@ import {
     updatePost,
     getBoardItem,
 } from '../api/board-writeRequest.js';
+import { getProfileImage } from '../api/profileImageRequest.js';
 
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
@@ -20,7 +20,9 @@ const HTTP_CREATED = 201;
 const MAX_TITLE_LENGTH = 26;
 const MAX_CONTENT_LENGTH = 1500;
 
-const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
+const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
+const MAX_IMAGE_COUNT = 2;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 const submitButton = document.querySelector('#submit');
 const titleInput = document.querySelector('#title');
@@ -38,6 +40,8 @@ const boardWrite = {
 
 let isModifyMode = false;
 let modifyData = {};
+let selectedImageFiles = [];
+let isSubmitting = false;
 
 const observeSignupData = () => {
     const { title, content } = boardWrite;
@@ -55,15 +59,13 @@ const getBoardData = () => {
     return {
         title: boardWrite.title,
         content: boardWrite.content,
-        attachFileUrl:
-            localStorage.getItem('postFileUrl') === null
-                ? undefined
-                : localStorage.getItem('postFileUrl'),
     };
 };
 
 // 버튼 클릭시 이벤트
 const addBoard = async () => {
+    if (isSubmitting) return;
+
     const boardData = getBoardData();
 
     // boardData가 false일 경우 함수 종료
@@ -73,15 +75,45 @@ const addBoard = async () => {
         return Dialog('게시글', '제목은 26자 이하로 입력해주세요.');
 
     if (!isModifyMode) {
+        isSubmitting = true;
+        submitButton.disabled = true;
+
+        //1.선택한 게시글 이미지가 있으면 파일 먼저 업로드
+        if (selectedImageFiles.length > 0) {
+            const formData = new FormData();
+            selectedImageFiles.forEach(file => formData.append('files', file));
+
+            const imageResult = await fileUpload(formData);
+            if (!imageResult.ok) {
+                Dialog('게시글', '이미지 업로드에 실패했습니다.');
+                isSubmitting = false;
+                observeSignupData();
+                return;
+            }
+
+            //2.업로드 응답의 파일명을 게시글 작성 요청에 추가
+            boardData.jpgPaths = imageResult.data.map(image => image.jpgPath);
+            boardData.webpPaths = imageResult.data.map(
+                image => image.webpPath,
+            );
+        }
+
+        //3.게시글 내용과 업로드된 이미지 파일명으로 게시글 작성
         const { ok, status, data } = await createPost(boardData);
-        if (!ok) throw new Error('서버 응답 오류');
+        if (!ok) {
+            Dialog('게시글', '게시글 작성에 실패했습니다.');
+            isSubmitting = false;
+            observeSignupData();
+            return;
+        }
 
         if (status === HTTP_CREATED) {
-            localStorage.removeItem('postFileUrl');
-            window.location.href = `/html/board.html?id=${data.insertId}`;
+            window.location.href = `/html/board.html?id=${data.postId}`;
         } else {
             const helperElement = contentHelpElement;
             helperElement.textContent = '제목, 내용을 모두 작성해주세요.';
+            isSubmitting = false;
+            observeSignupData();
         }
     } else {
         // 게시글 작성 api 호출
@@ -131,25 +163,38 @@ const changeEventHandler = async (event, uid) => {
             helperElement.textContent = '';
         }
     } else if (uid == 'image') {
-        const file = event.target.files[0]; // 사용자가 선택한 파일
-        if (!file) {
-            console.log('파일이 선택되지 않았습니다.');
+        const files = Array.from(event.target.files);
+
+        //게시글 이미지는 최대 2장까지 선택 가능
+        if (files.length > MAX_IMAGE_COUNT) {
+            Dialog('이미지 선택 실패', '이미지는 최대 2장까지 선택할 수 있습니다.');
+            event.target.value = '';
+            selectedImageFiles = [];
+            imagePreviewText.style.display = 'none';
             return;
         }
 
-        const formData = new FormData();
-        formData.append('postFile', file);
+        //파일당 최대 크기는 백엔드와 동일하게 10MB로 제한
+        if (files.some(file => file.size > MAX_IMAGE_SIZE)) {
+            Dialog('이미지 선택 실패', '이미지는 파일당 10MB 이하여야 합니다.');
+            event.target.value = '';
+            selectedImageFiles = [];
+            imagePreviewText.style.display = 'none';
+            return;
+        }
 
-        // 파일 업로드를 위한 POST 요청 실행
-        try {
-            const { ok, data } = await fileUpload(formData);
-            if (!ok) throw new Error('서버 응답 오류');
-            localStorage.setItem('postFileUrl', data.fileUrl);
-        } catch (error) {
-            console.error('업로드 중 오류 발생:', error);
+        selectedImageFiles = files;
+        if (files.length > 0) {
+            imagePreviewText.textContent = files
+                .map(file => file.name)
+                .join(', ');
+            imagePreviewText.style.display = 'block';
+        } else {
+            imagePreviewText.style.display = 'none';
         }
     } else if (uid === 'imagePreviewText') {
-        localStorage.removeItem('postFileUrl');
+        selectedImageFiles = [];
+        imageInput.value = '';
         imagePreviewText.style.display = 'none';
     }
 
@@ -227,13 +272,17 @@ const setModifyData = data => {
 
 const init = async () => {
     const dataResponse = await authCheck();
+    if (!dataResponse) return;
+
     const data = await dataResponse.json();
     const modifyId = checkModifyMode();
 
-    const profileImage = resolveImageUrl(
-        data.data.profileImageUrl,
-        DEFAULT_PROFILE_IMAGE,
-    );
+    //헤더에서 사용할 로그인 유저의 프로필 썸네일 조회
+    const profileImageResult = await getProfileImage(data.data.userId);
+    const profileImage =
+        profileImageResult.ok && profileImageResult.data.thumbnailUrl
+            ? profileImageResult.data.thumbnailUrl
+            : DEFAULT_PROFILE_IMAGE;
 
     prependChild(document.body, Header('커뮤니티', 1, profileImage));
 
@@ -253,4 +302,6 @@ const init = async () => {
     addEvent();
 };
 
-init();
+init().catch(error => {
+    console.error('게시글 작성 화면 초기화 실패:', error);
+});
