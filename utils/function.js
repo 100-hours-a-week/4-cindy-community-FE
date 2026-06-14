@@ -1,3 +1,5 @@
+import { requestWithTokenRefresh } from './request.js';
+
 export const getServerUrl = () => {
     const configUrl =
         typeof window !== 'undefined' &&
@@ -26,10 +28,13 @@ export const serverSessionCheck = async () => {
     const userId = localStorage.getItem('userId');
     if (!userId) return null;
 
-    const res = await fetch(`${getServerUrl()}/users/${userId}`, {
-        method: 'GET',
-        credentials: 'include',
-    });
+    const res = await requestWithTokenRefresh(
+        `${getServerUrl()}/users/${userId}`,
+        {
+            method: 'GET',
+            credentials: 'include',
+        },
+    );
     return res;
 };
 
