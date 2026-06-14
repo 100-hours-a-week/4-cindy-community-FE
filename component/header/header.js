@@ -69,6 +69,15 @@ const Header = (
         profileElement.loading = 'eager';
         profileElement.src = profileImage;
 
+        //프로필 이미지 조회 실패 시 기본 이미지로 대체
+        profileElement.addEventListener(
+            'error',
+            () => {
+                profileElement.src = '/public/profile_default.svg';
+            },
+            { once: true },
+        );
+
         const Drop = headerDropdownMenu();
         Drop.classList.add('none');
 

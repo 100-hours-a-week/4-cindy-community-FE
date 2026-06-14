@@ -1,10 +1,11 @@
 import BoardItem from '../component/board/boardItem.js';
 import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
-import { authCheck, getServerUrl, prependChild, resolveImageUrl } from '../utils/function.js';
+import { authCheck, prependChild } from '../utils/function.js';
 import { getPosts, searchPosts } from '../api/indexRequest.js';
+import { getProfileImage } from '../api/profileImageRequest.js';
 
-const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
+const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
 const HTTP_NOT_AUTHORIZED = 401;
 const SCROLL_THRESHOLD = 0.9;
 const INITIAL_OFFSET = 5;
@@ -150,16 +151,22 @@ const addInfinityScrollEvent = () => {
 const init = async () => {
     try {
         const response = await authCheck();
+        if (!response) return;
+
         const data = await response.json();
         if (response.status === HTTP_NOT_AUTHORIZED) {
             window.location.href = '/html/login.html';
             return;
         }
 
-        const profileImageUrl = resolveImageUrl(
-            data.data.profileImageUrl,
-            DEFAULT_PROFILE_IMAGE,
-        );
+        //로그인한 유저의 프로필 이미지 정보 조회
+        const profileImageResult = await getProfileImage(data.data.userId);
+
+        //프로필 이미지가 있으면 백엔드에서 받은 썸네일 URL 사용
+        const profileImageUrl =
+            profileImageResult.ok && profileImageResult.data.thumbnailUrl
+                ? profileImageResult.data.thumbnailUrl
+                : DEFAULT_PROFILE_IMAGE;
 
         prependChild(
             document.body,
