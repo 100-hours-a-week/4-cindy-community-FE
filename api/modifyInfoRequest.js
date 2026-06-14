@@ -21,12 +21,9 @@ export const userModify = async (userId, nickname) => {
     return result;
 };
 
-export const userDelete = async () => {
-    const result = await requestJson(`${getServerUrl()}/v1/users/me`, {
+export const userDelete = async userId => {
+    const result = await requestJson(`${getServerUrl()}/users/${userId}`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
         credentials: 'include',
     });
     return result;

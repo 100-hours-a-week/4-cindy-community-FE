@@ -1,4 +1,4 @@
-import { getServerUrl } from '../../utils/function.js';
+import { logout } from '../../api/authRequest.js';
 
 const headerDropdownMenu = () => {
     const wrap = document.createElement('div');
@@ -13,15 +13,16 @@ const headerDropdownMenu = () => {
 
     modifyInfoLink.href = '/html/modifyInfo.html';
     modifyPasswordLink.href = '/html/modifyPassword.html';
-    logoutLink.addEventListener('click', async () => {
-        try {
-            await fetch(`${getServerUrl()}/v1/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-            });
-        } finally {
-            location.href = '/html/login.html';
+    logoutLink.addEventListener('click', async event => {
+        event.preventDefault();
+
+        const { ok } = await logout();
+        if (!ok) {
+            return;
         }
+
+        localStorage.clear();
+        location.href = '/html/login.html';
     });
 
     wrap.classList.add('drop');
@@ -81,7 +82,7 @@ const Header = (
         const Drop = headerDropdownMenu();
         Drop.classList.add('none');
 
-        profileElement.addEventListener('click', () => {
+        profileElement.addEventListener('click', event => {
             Drop.classList.toggle('none');
             event.stopPropagation();
         });

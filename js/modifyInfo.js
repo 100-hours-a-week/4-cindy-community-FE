@@ -2,7 +2,6 @@ import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
 import {
     prependChild,
-    getServerUrl,
     validNickname,
 } from '../utils/function.js';
 import {
@@ -15,7 +14,7 @@ import {
     getProfileImage,
     updateProfileImage,
 } from '../api/profileImageRequest.js';
-import { requestJson } from '../utils/request.js';
+import { logout } from '../api/authRequest.js';
 
 const emailTextElement = document.querySelector('#id');
 const nicknameInputElement = document.querySelector('#nickname');
@@ -182,17 +181,17 @@ const sendModifyData = async () => {
 // 회원 탈퇴
 const deleteAccount = async () => {
     const callback = async () => {
-        const { status } = await userDelete();
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            location.href = '/html/login.html';
+            return;
+        }
 
-        if (status === HTTP_OK) {
-            try {
-                await requestJson(`${getServerUrl()}/v1/auth/logout`, {
-                    method: 'POST',
-                    credentials: 'include',
-                });
-            } catch (error) {
-                console.error('로그아웃 요청 실패:', error);
-            }
+        const { ok } = await userDelete(userId);
+
+        if (ok) {
+            await logout();
+            localStorage.clear();
             location.href = '/html/login.html';
         } else {
             Dialog('회원 탈퇴 실패', '회원 탈퇴에 실패했습니다.');

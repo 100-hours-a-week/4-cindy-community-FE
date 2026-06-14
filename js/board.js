@@ -14,6 +14,7 @@ import {
     deletePost,
     writeComment,
     getComments,
+    getPostLikes,
     likePost,
     unlikePost,
 } from '../api/boardRequest.js';
@@ -56,7 +57,20 @@ const getBoardImages = async postId => {
     return data;
 };
 
-const setBoardDetail = (data, postImages, writerProfileImage) => {
+const getBoardLikes = async postId => {
+    const { ok, data } = await getPostLikes(postId);
+    if (!ok) {
+        throw new Error('좋아요 정보를 가져오는데 실패하였습니다.');
+    }
+    return data;
+};
+
+const setBoardDetail = (
+    data,
+    postImages,
+    likeData,
+    writerProfileImage,
+) => {
     // 헤드 정보
     const titleElement = document.querySelector('.title');
     const createdAtElement = document.querySelector('.createdAt');
@@ -109,10 +123,10 @@ const setBoardDetail = (data, postImages, writerProfileImage) => {
 
     const likeButtonElement = document.querySelector('.likeButton');
     const likeCountElement = likeButtonElement.querySelector('h3');
-    let isLiked = Boolean(data.isLiked);
+    let isLiked = Boolean(likeData.isLiked);
     let isLikeLoading = false;
 
-    likeCountElement.textContent = formatCount(data.likeCount ?? 0);
+    likeCountElement.textContent = formatCount(likeData.likeCount);
     setLikeButtonState(likeButtonElement, isLiked);
 
     likeButtonElement.addEventListener('click', async () => {
@@ -132,7 +146,7 @@ const setBoardDetail = (data, postImages, writerProfileImage) => {
                             likeData.likeCount,
                         );
                     }
-                } else if (status === 409 && code === 'POST_ALREADY_LIKED') {
+                } else if (status === 409 && code === 'ALREADY_LIKED') {
                     isLiked = true;
                     setLikeButtonState(likeButtonElement, isLiked);
                 } else if (status === HTTP_NOT_AUTHORIZED) {
@@ -152,7 +166,7 @@ const setBoardDetail = (data, postImages, writerProfileImage) => {
                             likeData.likeCount,
                         );
                     }
-                } else if (status === 409 && code === 'POST_ALREADY_UNLIKED') {
+                } else if (status === 404 && code === 'LIKE_NOT_FOUND') {
                     isLiked = false;
                     setLikeButtonState(likeButtonElement, isLiked);
                 } else if (status === HTTP_NOT_AUTHORIZED) {
@@ -302,10 +316,11 @@ const init = async () => {
 
         const pageId = getQueryString('id');
 
-        //게시글 상세 정보와 연결된 이미지 목록 조회
-        const [pageData, postImages] = await Promise.all([
+        //게시글 상세 정보, 이미지 목록, 좋아요 정보 조회
+        const [pageData, postImages, likeData] = await Promise.all([
             getBoardDetail(pageId),
             getBoardImages(pageId),
+            getBoardLikes(pageId),
         ]);
 
         const isMyPost = pageData.nickname === myInfo.nickname;
@@ -315,6 +330,7 @@ const init = async () => {
         setBoardDetail(
             pageData,
             postImages,
+            likeData,
             isMyPost ? profileImage : null,
         );
 
