@@ -1,25 +1,27 @@
-import { padTo2Digits, resolveImageUrl } from '../../utils/function.js';
+import {
+    padTo2Digits,
+    resolveImageUrl,
+} from '../../utils/function.js';
+
+const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
 
 const BoardItem = (
     postId,
     date,
     title,
     viewCount,
-    imgUrl,
     writer,
-    commentCount,
-    likeCount,
+    profileImage,
 ) => {
     // 파라미터 값이 없으면 리턴
     if (
+        postId === undefined ||
         !date ||
         !title ||
         viewCount === undefined ||
-        likeCount === undefined ||
-        commentCount === undefined ||
         !writer
     ) {
-        return;
+        return '';
     }
 
     // 날짜 포맷 변경 YYYY-MM-DD hh:mm:ss
@@ -32,24 +34,26 @@ const BoardItem = (
     const seconds = dateObj.getSeconds();
 
     const formattedDate = `${year}-${padTo2Digits(month)}-${padTo2Digits(day)} ${padTo2Digits(hours)}:${padTo2Digits(minutes)}:${padTo2Digits(seconds)}`;
-
-    const DEFAULT_PROFILE_IMAGE = '../public/image/profile/default.jpg';
-    const profileImageUrl = resolveImageUrl(imgUrl, DEFAULT_PROFILE_IMAGE);
-    // const API_HOST = getServerUrl();
+    const profileImageUrl = resolveImageUrl(
+        profileImage,
+        DEFAULT_PROFILE_IMAGE,
+    );
 
     return `
     <a href="/html/board.html?id=${postId}">
         <div class="boardItem">
             <h2 class="title">${title}</h2>
             <div class="info">
-                <h3 class="views">좋아요 <b>${likeCount}</b></h3>
-                <h3 class="views">댓글 <b>${commentCount}</b></h3>
                 <h3 class="views">조회수 <b>${viewCount}</b></h3>
                 <p class="date">${formattedDate}</p>
             </div>
             <div class="writerInfo">
             <picture class="img">
-                <img src="${`${profileImageUrl}`}" alt="img">
+                <img
+                    src="${profileImageUrl}"
+                    alt="${writer} 프로필 이미지"
+                    onerror="this.onerror=null;this.src='${DEFAULT_PROFILE_IMAGE}';"
+                >
             </picture>
             <h2 class="writer">${writer}</h2>
         </div>

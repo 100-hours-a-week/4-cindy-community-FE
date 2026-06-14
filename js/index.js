@@ -8,7 +8,6 @@ import { getProfileImage } from '../api/profileImageRequest.js';
 const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
 const HTTP_NOT_AUTHORIZED = 401;
 const SCROLL_THRESHOLD = 0.9;
-const INITIAL_OFFSET = 5;
 const ITEMS_PER_LOAD = 5;
 const DEFAULT_SORT = 'recent';
 let currentKeyword = '';
@@ -16,6 +15,8 @@ let currentSort = DEFAULT_SORT;
 let offset = 0;
 let isEnd = false;
 let isProcessing = false;
+let loginUserInfo = null;
+let loginUserProfileImage = DEFAULT_PROFILE_IMAGE;
 
 const updateSortVisibility = () => {
     const sortRow = document.querySelector('#searchSortRow');
@@ -48,14 +49,15 @@ const setBoardItem = boardData => {
         const itemsHtml = boardData
             .map(data =>
                 BoardItem(
-                    data.id,
-                    data.createdAt,
+                    data.postId,
+                    data.updatedAt,
                     data.title,
-                    data.viewCount,
-                    data.author ? data.author.profileImageUrl : null,
-                    data.author ? data.author.nickname : null,
-                    data.commentCount,
-                    data.likeCount,
+                    data.views,
+                    data.nickname,
+                    loginUserInfo &&
+                    data.nickname === loginUserInfo.nickname
+                        ? loginUserProfileImage
+                        : null,
                 ),
             )
             .join('');
@@ -80,13 +82,20 @@ const loadBoardItems = async ({ reset = false } = {}) => {
             isEnd = false;
             resetBoardList();
         }
-        const items = await getBoardItem(offset, ITEMS_PER_LOAD);
+        const postList = await getBoardItem(offset, ITEMS_PER_LOAD);
+        const items = postList && Array.isArray(postList.content)
+            ? postList.content
+            : [];
         if (!items || items.length === 0) {
             isEnd = true;
             return;
         }
         setBoardItem(items);
-        offset += ITEMS_PER_LOAD;
+        isEnd =
+            postList.hasNext === false ||
+            postList.last === true ||
+            items.length < ITEMS_PER_LOAD;
+        offset += 1;
     } catch (error) {
         console.error('Error fetching items:', error);
         isEnd = true;
@@ -134,10 +143,6 @@ const addSortEvent = () => {
 
 // 스크롤 이벤트 추가
 const addInfinityScrollEvent = () => {
-    offset = INITIAL_OFFSET;
-    isEnd = false;
-    isProcessing = false;
-
     window.addEventListener('scroll', async () => {
         const hasScrolledToThreshold =
             window.scrollY + window.innerHeight >=
@@ -158,6 +163,7 @@ const init = async () => {
             window.location.href = '/html/login.html';
             return;
         }
+        loginUserInfo = data.data;
 
         //로그인한 유저의 프로필 이미지 정보 조회
         const profileImageResult = await getProfileImage(data.data.userId);
@@ -167,6 +173,7 @@ const init = async () => {
             profileImageResult.ok && profileImageResult.data.thumbnailUrl
                 ? profileImageResult.data.thumbnailUrl
                 : DEFAULT_PROFILE_IMAGE;
+        loginUserProfileImage = profileImageUrl;
 
         prependChild(
             document.body,

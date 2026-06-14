@@ -4,13 +4,14 @@ import {
     authCheck,
     getQueryString,
     prependChild,
-    resolveImageUrl,
 } from '../utils/function.js';
 import {
     createPost,
     fileUpload,
     updatePost,
+    updatePostImages,
     getBoardItem,
+    getPostImages,
 } from '../api/board-writeRequest.js';
 import { getProfileImage } from '../api/profileImageRequest.js';
 
@@ -41,7 +42,19 @@ const boardWrite = {
 let isModifyMode = false;
 let modifyData = {};
 let selectedImageFiles = [];
+let existingPostImages = [];
+let isPostImageChanged = false;
 let isSubmitting = false;
+
+const showExistingPostImages = () => {
+    if (!isModifyMode || existingPostImages.length === 0) {
+        imagePreviewText.style.display = 'none';
+        return;
+    }
+
+    imagePreviewText.innerHTML = `기존 이미지 ${existingPostImages.length}장 <span class="deleteFile">X</span>`;
+    imagePreviewText.style.display = 'block';
+};
 
 const observeSignupData = () => {
     const { title, content } = boardWrite;
@@ -116,21 +129,34 @@ const addBoard = async () => {
             observeSignupData();
         }
     } else {
-        // 게시글 작성 api 호출
+        isSubmitting = true;
+        submitButton.disabled = true;
+
         const postId = getQueryString('postId');
-        const setData = {
-            ...boardData,
-        };
+        const { ok, status } = await updatePost(postId, boardData);
 
-        const { ok, status } = await updatePost(postId, setData);
-        if (!ok) throw new Error('서버 응답 오류');
-
-        if (status === HTTP_OK) {
-            localStorage.removeItem('postFileUrl');
-            window.location.href = `/html/board.html?id=${postId}`;
-        } else {
-            Dialog('게시글', '게시글 수정 실패');
+        if (!ok || status !== HTTP_OK) {
+            Dialog('게시글', '게시글 수정에 실패했습니다.');
+            isSubmitting = false;
+            observeSignupData();
+            return;
         }
+
+        //게시글 이미지가 변경된 경우 전체 교체 또는 삭제
+        if (isPostImageChanged) {
+            const imageResult = await updatePostImages(
+                postId,
+                selectedImageFiles,
+            );
+            if (!imageResult.ok) {
+                Dialog('게시글', '게시글 이미지를 수정하지 못했습니다.');
+                isSubmitting = false;
+                observeSignupData();
+                return;
+            }
+        }
+
+        window.location.href = `/html/board.html?id=${postId}`;
     }
 };
 const changeEventHandler = async (event, uid) => {
@@ -170,7 +196,7 @@ const changeEventHandler = async (event, uid) => {
             Dialog('이미지 선택 실패', '이미지는 최대 2장까지 선택할 수 있습니다.');
             event.target.value = '';
             selectedImageFiles = [];
-            imagePreviewText.style.display = 'none';
+            showExistingPostImages();
             return;
         }
 
@@ -179,11 +205,12 @@ const changeEventHandler = async (event, uid) => {
             Dialog('이미지 선택 실패', '이미지는 파일당 10MB 이하여야 합니다.');
             event.target.value = '';
             selectedImageFiles = [];
-            imagePreviewText.style.display = 'none';
+            showExistingPostImages();
             return;
         }
 
         selectedImageFiles = files;
+        if (isModifyMode) isPostImageChanged = true;
         if (files.length > 0) {
             imagePreviewText.textContent = files
                 .map(file => file.name)
@@ -196,6 +223,7 @@ const changeEventHandler = async (event, uid) => {
         selectedImageFiles = [];
         imageInput.value = '';
         imagePreviewText.style.display = 'none';
+        if (isModifyMode) isPostImageChanged = true;
     }
 
     observeSignupData();
@@ -204,6 +232,15 @@ const changeEventHandler = async (event, uid) => {
 const getBoardModifyData = async postId => {
     const { ok, data } = await getBoardItem(postId);
     if (!ok) throw new Error('서버 응답 오류');
+    return data;
+};
+
+//수정모드시 사용하는 게시글 이미지 목록 가져오기
+const getBoardModifyImages = async postId => {
+    const { ok, data } = await getPostImages(postId);
+    if (!ok || !Array.isArray(data)) {
+        throw new Error('게시글 이미지 정보를 가져오는데 실패하였습니다.');
+    }
     return data;
 };
 
@@ -233,32 +270,14 @@ const addEvent = () => {
     }
 };
 
-const setModifyData = data => {
+const setModifyData = (data, postImages) => {
     titleInput.value = data.title;
     contentInput.value = data.content;
 
-    const fileUrl = data.fileUrl || resolveImageUrl(data.filePath);
-    if (fileUrl) {
-        // fileUrl에서 파일 이름만 추출하여 표시
-        const fileName = fileUrl.split('/').pop();
-        imagePreviewText.innerHTML =
-            fileName + `<span class="deleteFile">X</span>`;
-        imagePreviewText.style.display = 'block';
-        localStorage.setItem('postFileUrl', fileUrl);
-
-        // 이제 추출된 파일명을 사용하여 File 객체를 생성
-        const attachFile = new File(
-            // 실제 이미지 데이터 대신 URL을 사용
-            [fileUrl],
-            // 추출된 파일명
-            fileName,
-            // MIME 타입 지정, 실제 이미지 타입에 맞게 조정 필요
-            { type: '' },
-        );
-
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(attachFile);
-        imageInput.files = dataTransfer.files;
+    existingPostImages = postImages;
+    if (existingPostImages.length > 0) {
+        //기존 게시글 이미지 개수 표시
+        showExistingPostImages();
     } else {
         // 이미지 파일이 없으면 미리보기 숨김
         imagePreviewText.style.display = 'none';
@@ -288,14 +307,18 @@ const init = async () => {
 
     if (modifyId) {
         isModifyMode = true;
-        modifyData = await getBoardModifyData(modifyId);
+        const [postData, postImages] = await Promise.all([
+            getBoardModifyData(modifyId),
+            getBoardModifyImages(modifyId),
+        ]);
+        modifyData = postData;
 
-        if (data.idx !== modifyData.writerId) {
+        if (data.data.nickname !== modifyData.nickname) {
             Dialog('권한 없음', '권한이 없습니다.', () => {
                 window.location.href = '/';
             });
         } else {
-            setModifyData(modifyData);
+            setModifyData(modifyData, postImages);
         }
     }
 
