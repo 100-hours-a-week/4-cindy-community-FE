@@ -3,7 +3,7 @@ import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
 import {
     authCheck,
-    getServerUrl,
+    getProfileImageFileUrl,
     prependChild,
     padTo2Digits,
     resolveImageUrl,
@@ -323,7 +323,8 @@ const init = async () => {
             getBoardLikes(pageId),
         ]);
 
-        const isMyPost = pageData.nickname === myInfo.nickname;
+        const isMyPost =
+            parseInt(pageData.userId, 10) === parseInt(myInfo.userId, 10);
         if (isMyPost) {
             setBoardModify(pageData);
         }
@@ -331,7 +332,7 @@ const init = async () => {
             pageData,
             postImages,
             likeData,
-            isMyPost ? profileImage : null,
+            getProfileImageFileUrl(pageData.userId) || pageData.profileImageUrl,
         );
 
         //게시글에 작성된 댓글 목록 조회

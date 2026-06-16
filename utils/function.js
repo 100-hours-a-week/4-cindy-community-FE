@@ -24,6 +24,11 @@ export const resolveImageUrl = (url, fallback = null) => {
     return `${getServerUrl()}${url}`;
 };
 
+export const getProfileImageFileUrl = (userId, type = 'thumbnail') => {
+    if (userId === undefined || userId === null) return null;
+    return `${getServerUrl()}/users/${userId}/profile-image/file?type=${type}`;
+};
+
 export const serverSessionCheck = async () => {
     const userId = localStorage.getItem('userId');
     if (!userId) return null;

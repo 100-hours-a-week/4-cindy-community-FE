@@ -1,7 +1,11 @@
 import BoardItem from '../component/board/boardItem.js';
 import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
-import { authCheck, prependChild } from '../utils/function.js';
+import {
+    authCheck,
+    getProfileImageFileUrl,
+    prependChild,
+} from '../utils/function.js';
 import { getPosts, searchPosts } from '../api/indexRequest.js';
 import { getProfileImage } from '../api/profileImageRequest.js';
 
@@ -15,8 +19,6 @@ let currentSort = DEFAULT_SORT;
 let offset = 0;
 let isEnd = false;
 let isProcessing = false;
-let loginUserInfo = null;
-let loginUserProfileImage = DEFAULT_PROFILE_IMAGE;
 
 const updateSortVisibility = () => {
     const sortRow = document.querySelector('#searchSortRow');
@@ -54,10 +56,7 @@ const setBoardItem = boardData => {
                     data.title,
                     data.views,
                     data.nickname,
-                    loginUserInfo &&
-                    data.nickname === loginUserInfo.nickname
-                        ? loginUserProfileImage
-                        : null,
+                    getProfileImageFileUrl(data.userId) || data.profileImageUrl,
                 ),
             )
             .join('');
@@ -163,8 +162,6 @@ const init = async () => {
             window.location.href = '/html/login.html';
             return;
         }
-        loginUserInfo = data.data;
-
         //로그인한 유저의 프로필 이미지 정보 조회
         const profileImageResult = await getProfileImage(data.data.userId);
 
@@ -173,7 +170,6 @@ const init = async () => {
             profileImageResult.ok && profileImageResult.data.thumbnailUrl
                 ? profileImageResult.data.thumbnailUrl
                 : DEFAULT_PROFILE_IMAGE;
-        loginUserProfileImage = profileImageUrl;
 
         prependChild(
             document.body,
