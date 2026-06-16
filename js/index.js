@@ -57,6 +57,8 @@ const setBoardItem = boardData => {
                     data.views,
                     data.nickname,
                     getProfileImageFileUrl(data.userId) || data.profileImageUrl,
+                    data.commentCount ?? 0,
+                    data.likeCount ?? 0,
                 ),
             )
             .join('');

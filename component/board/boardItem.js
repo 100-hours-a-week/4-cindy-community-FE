@@ -12,6 +12,8 @@ const BoardItem = (
     viewCount,
     writer,
     profileImage,
+    commentCount = 0,
+    likeCount = 0,
 ) => {
     // 파라미터 값이 없으면 리턴
     if (
@@ -19,6 +21,8 @@ const BoardItem = (
         !date ||
         !title ||
         viewCount === undefined ||
+        likeCount === undefined ||
+        commentCount === undefined ||
         !writer
     ) {
         return '';
@@ -44,6 +48,8 @@ const BoardItem = (
         <div class="boardItem">
             <h2 class="title">${title}</h2>
             <div class="info">
+                <h3 class="views">좋아요 <b>${likeCount}</b></h3>
+                <h3 class="views">댓글 <b>${commentCount}</b></h3>
                 <h3 class="views">조회수 <b>${viewCount}</b></h3>
                 <p class="date">${formattedDate}</p>
             </div>
