@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import path from 'path';
 import { dirname } from 'path';
 
 const app = express();
@@ -13,7 +14,13 @@ const port = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-app.use(express.static(__dirname));
+app.use('/html', express.static(path.join(__dirname, 'html')));
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/component', express.static(path.join(__dirname, 'component')));
+app.use('/api', express.static(path.join(__dirname, 'api')));
+app.use('/utils', express.static(path.join(__dirname, 'utils')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.get('/config.js', (req, res) => {
     const apiBaseUrl = process.env.API_BASE_URL || '';
