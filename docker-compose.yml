@@ -1,0 +1,12 @@
+services:
+  app:
+    image: 719905537984.dkr.ecr.ap-northeast-2.amazonaws.com/community-board-fe:${IMAGE_TAG}
+    container_name: community-board-fe
+    restart: unless-stopped
+    ports:
+      - "80:3000"
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: ${API_BASE_URL:-}
+    mem_limit: 256m
+    cpus: 0.5
