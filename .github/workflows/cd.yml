@@ -306,7 +306,7 @@ jobs:
             --target-type instance \
             --health-check-protocol HTTP \
             --health-check-path "${HEALTH_CHECK_PATH}" \
-            --matcher HttpCode=200,302 \
+            --matcher "HttpCode=200,302" \
             --query 'TargetGroups[0].TargetGroupArn' \
             --output text)"
 
