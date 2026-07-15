@@ -277,7 +277,7 @@ jobs:
                 - "80:3000"
               environment:
                 NODE_ENV: production
-                API_BASE_URL: \${API_BASE_URL:-}
+                API_BASE_URL: "https://community-board.p-e.kr"
               mem_limit: 256m
               cpus: 0.5
           COMPOSE
