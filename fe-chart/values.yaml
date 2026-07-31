@@ -51,4 +51,4 @@ probes:
     failureThreshold: 3
 
 application:
-  apiBaseUrl: "http://community-board.p-e.kr"
+  apiBaseUrl: "https://community-board.p-e.kr"
