@@ -10,6 +10,7 @@ import {
 } from '../utils/function.js';
 import {
     getPost,
+    increasePostView,
     getPostImages,
     deletePost,
     writeComment,
@@ -322,6 +323,11 @@ const init = async () => {
             getBoardImages(pageId),
             getBoardLikes(pageId),
         ]);
+
+        //게시글 상세 조회 성공 후 조회수 증가 요청
+        increasePostView(pageId).catch(error => {
+            console.error('조회수 증가 요청 실패:', error);
+        });
 
         const isMyPost =
             parseInt(pageData.userId, 10) === parseInt(myInfo.userId, 10);
