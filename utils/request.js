@@ -55,7 +55,21 @@ const refreshAccessToken = url => {
 
 //인증 실패 응답이면 토큰 재발급 후 기존 요청 한 번 재시도
 export const requestWithTokenRefresh = async (url, options = {}) => {
-    const response = await fetch(url, options);
+    const method = (options.method || 'GET').toUpperCase();
+    const shouldSendCsrfToken = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const csrfToken = shouldSendCsrfToken ? getCsrfToken() : null;
+    const requestOptions = csrfToken
+        ? {
+            ...options,
+            headers: {
+                ...options.headers,
+                'X-XSRF-TOKEN': csrfToken,
+            },
+        }
+        : options;
+
+    //쓰기 요청이면 CSRF 토큰 헤더에 붙여 보내기
+    const response = await fetch(url, requestOptions);
     if (
         ![HTTP_NOT_AUTHORIZED, HTTP_FORBIDDEN].includes(response.status) ||
         isAuthRequest(url)
@@ -66,7 +80,7 @@ export const requestWithTokenRefresh = async (url, options = {}) => {
     const isRefreshed = await refreshAccessToken(url);
     if (!isRefreshed) return response;
 
-    return fetch(url, options);
+    return fetch(url, requestOptions);
 };
 
 export const requestJson = async (url, options = {}) => {
