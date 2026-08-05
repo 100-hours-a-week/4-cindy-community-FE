@@ -8,6 +8,14 @@ export const getPost = postId => {
     return result;
 };
 
+export const increasePostView = postId => {
+    const result = requestJson(`${getServerUrl()}/posts/${postId}/views`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    return result;
+};
+
 export const getPostImages = postId => {
     const result = requestJson(`${getServerUrl()}/posts/${postId}/images`, {
         credentials: 'include',

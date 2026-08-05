@@ -1,9 +1,9 @@
 import { changePassword } from '../api/modifyPasswordRequest.js';
+import { logout } from '../api/authRequest.js';
 import Dialog from '../component/dialog/dialog.js';
 import Header from '../component/header/header.js';
 import {
     authCheck,
-    getServerUrl,
     prependChild,
     validPassword,
 } from '../utils/function.js';
@@ -98,10 +98,8 @@ const modifyPassword = async () => {
 
     if (result.ok) {
         try {
-            await fetch(`${getServerUrl()}/auth`, {
-                method: 'DELETE',
-                credentials: 'include',
-            });
+            //비밀번호 바꾼 뒤에는 다시 로그인하도록 로그아웃 처리
+            await logout();
         } catch (error) {
             console.error('로그아웃 요청 실패:', error);
         }
