@@ -48,28 +48,28 @@ const getBoardItem = async (offsetValue = 0, limitValue = 5) => {
 const setBoardItem = boardData => {
     const boardList = document.querySelector('.boardList');
     if (boardList && boardData) {
-        const itemsHtml = boardData
-            .map(data =>
-                BoardItem(
-                    data.postId,
-                    data.updatedAt,
-                    data.title,
-                    data.views,
-                    data.nickname,
-                    getProfileImageFileUrl(data.userId) || data.profileImageUrl,
-                    data.commentCount ?? 0,
-                    data.likeCount ?? 0,
-                ),
-            )
-            .join('');
-        boardList.innerHTML += ` ${itemsHtml}`;
+        boardData.forEach(data => {
+            const boardItem = BoardItem(
+                data.postId,
+                data.updatedAt,
+                data.title,
+                data.views,
+                data.nickname,
+                getProfileImageFileUrl(data.userId) || data.profileImageUrl,
+                data.commentCount ?? 0,
+                data.likeCount ?? 0,
+            );
+            if (boardItem) {
+                boardList.appendChild(boardItem);
+            }
+        });
     }
 };
 
 const resetBoardList = () => {
     const boardList = document.querySelector('.boardList');
     if (boardList) {
-        boardList.innerHTML = '';
+        boardList.replaceChildren();
     }
 };
 

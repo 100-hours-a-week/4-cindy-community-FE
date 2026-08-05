@@ -34,8 +34,8 @@ const CommentItem = (
         // 댓글 내용을 보여주는 p 태그 찾기
         const p = commentInfoWrap.querySelector('p');
         if (!p) return;
-        // 현재 댓글 내용 저장
-        const originalContent = p.innerHTML.replace(/<br>/g, '\n');
+        // 서버에서 받은 원본 댓글을 그대로 써야 HTML로 다시 해석될 틈이 없다
+        const originalContent = data.content;
 
         // textarea 생성 및 설정
         const textarea = document.createElement('textarea');
@@ -89,7 +89,7 @@ const CommentItem = (
         cancelButton.textContent = '취소';
         cancelButton.onclick = () => {
             // textarea를 원래의 p 태그로 다시 변경
-            p.innerHTML = originalContent.replace(/\n/g, '<br>'); // 원래 내용으로 복원
+            p.textContent = originalContent; // 원래 내용으로 복원
             commentInfoWrap.replaceChild(p, editWrap); // 편집 영역을 p로 교체
         };
 
@@ -155,7 +155,7 @@ const CommentItem = (
     }
 
     const p = document.createElement('p');
-    p.innerHTML = data.content.replace(/(?:\r\n|\r|\n)/g, '<br>');
+    p.textContent = data.content;
 
     commentInfoWrap.appendChild(infoDiv);
     commentInfoWrap.appendChild(p);
