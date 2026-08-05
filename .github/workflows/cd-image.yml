@@ -1,0 +1,67 @@
+name: FE 이미지 빌드 및 배포 설정 갱신
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '이미지 태그 (비워두면 커밋 SHA 사용)'
+        required: false
+  push:
+    branches:
+      - dev
+    paths-ignore:
+      - 'fe-chart/**'
+
+permissions:
+  id-token: write
+  contents: write
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: 719905537984.dkr.ecr.ap-northeast-2.amazonaws.com
+  ECR_REPOSITORY: community-board-fe
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 이미지 태그 결정
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::719905537984:role/community-board-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: fe-chart/values.yaml 이미지 태그 갱신
+        run: |
+          sed -i "s/^  tag: .*/  tag: ${{ steps.vars.outputs.tag }}/" fe-chart/values.yaml
+
+      - name: 변경사항 커밋 및 push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fe-chart/values.yaml
+          git commit -m "chore: FE 이미지 태그를 ${{ steps.vars.outputs.tag }}로 갱신" || echo "변경사항 없음"
+          git push
