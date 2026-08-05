@@ -2,6 +2,18 @@ const HTTP_NOT_AUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 let tokenRefreshPromise = null;
 
+//CSRF 방어용 쿠키에서 토큰 값 읽어오기
+export const getCsrfToken = () => {
+    const csrfCookie = document.cookie
+        .split(';')
+        .map(cookie => cookie.trim())
+        .find(cookie => cookie.startsWith('XSRF-TOKEN='));
+
+    if (!csrfCookie) return null;
+
+    return decodeURIComponent(csrfCookie.substring('XSRF-TOKEN='.length));
+};
+
 export const parseJsonSafe = async response => {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
