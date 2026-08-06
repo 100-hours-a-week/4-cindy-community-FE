@@ -74,10 +74,10 @@ const observeData = () => {
         authData.data.profileImageUrl !== changeData.profileImageUrl
     ) {
         button.disabled = false;
-        button.style.backgroundColor = '#7F6AEE';
+        button.style.backgroundColor = '#D94F70';
     } else {
         button.disabled = true;
-        button.style.backgroundColor = '#ACA0EB';
+        button.style.backgroundColor = '#E8CBD4';
     }
 };
 
@@ -311,7 +311,7 @@ const init = async () => {
     changeData.nickname = authData.data.nickname;
     changeData.profileImageUrl = authData.data.profileImageUrl;
 
-    prependChild(document.body, Header('커뮤니티', 2, thumbnailUrl));
+    prependChild(document.body, Header('Dessert Log 🍰', 2, thumbnailUrl));
     setData(authData.data);
     observeData();
     addEvent();

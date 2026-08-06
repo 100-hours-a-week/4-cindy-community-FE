@@ -1,96 +1,177 @@
 @import url('./common/layout.css');
 @import url('../component/header/header.css');
 
-.wrap {
-    width: 100%;
-    padding-left: 16px;
-    padding-right: 16px;
+body {
+    display: block;
+    min-height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background-color: #f6f7fb;
+}
 
+header {
+    position: sticky;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    width: 100%;
+    padding: 22px max(24px, calc((100vw - 880px) / 2));
+    border-bottom: 1px solid #eceff4;
+    background-color: rgba(255, 255, 255, 0.96);
+}
+
+header h1 {
+    color: #17151a;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    text-align: center;
+}
+
+.wrap {
+    width: min(760px, 100%);
+    min-height: calc(100vh - 77px);
+    margin: 0 auto;
+    padding: 58px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: flex-start;
-    row-gap: 16px;
+    row-gap: 22px;
+    background-color: transparent;
+}
+
+.background {
+    display: none;
 }
 
 h2 {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 31px;
-    letter-spacing: -0.02em;
+    width: 100%;
+    color: #17151a;
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 44px;
     text-align: center;
-    color: rgba(69, 72, 84, 1);
 }
 
 .inputBox {
+    width: min(620px, 100%);
     display: flex;
     flex-direction: column;
-    row-gap: 8px;
-    width: 100%;
+    row-gap: 9px;
+    position: relative;
 }
 
 .inputBox label {
+    padding: 0;
+    border-bottom: none;
+    color: #242832;
     font-size: 14px;
-    line-height: 17px;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-    color: rgba(69, 72, 84, 1);
-
-    padding: 16px 16px;
-
-    border-bottom: 1px solid #00000029;
+    font-weight: 800;
+    line-height: 18px;
 }
-.inputBox input {
+
+.inputBox input,
+.inputBox textarea {
     width: 100%;
-    padding: 16px;
-    border: none;
-    border-bottom: 1px solid #00000029;
-    background-color: transparent;
+    border: 1px solid #dfe3ea;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #17151a;
+    font-size: 15px;
+    line-height: 24px;
+    outline: none;
+}
+
+.inputBox input {
+    min-height: 50px;
+    padding: 0 14px;
 }
 
 .inputBox textarea {
-    width: 100%;
-    padding: 16px;
-    height: 200px;
-    resize: none;
-    outline: none;
-
-    border: none;
-    border-bottom: 1px solid #00000029;
-    background-color: transparent;
+    min-height: 240px;
+    padding: 14px;
+    resize: vertical;
 }
 
-.wrap button {
-    width: 80%;
-    height: 33px;
-    margin-top: 20px;
-    border-radius: 4px;
-    cursor: pointer;
+.inputBox input::placeholder,
+.inputBox textarea::placeholder {
+    color: #9aa2af;
+}
 
-    background-color: #aca0eb;
+.inputBox input:focus,
+.inputBox textarea:focus {
+    border-color: #17151a;
+    box-shadow: 0 0 0 3px rgba(23, 21, 26, 0.08);
+}
 
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 16.8px;
-    letter-spacing: -0.02em;
-    text-align: center;
-    color: rgba(255, 255, 255, 1);
-
+.inputBox input[type='file'] {
+    min-height: auto;
+    padding: 12px 0;
     border: none;
+    border-radius: 0;
+    background-color: transparent;
 }
 
 .non-border {
     border: none !important;
-    padding: 0 16px !important;
+    padding: 0 !important;
+}
+
+#imagePreviewText {
+    color: #68707f;
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.wrap button {
+    width: min(620px, 100%);
+    height: 50px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    background-color: #e8cbd4;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 20px;
+    text-align: center;
+}
+
+.wrap button:not(:disabled):hover {
+    background-color: #c93f60 !important;
 }
 
 .deleteFile {
     cursor: pointer;
     padding-left: 10px;
-    color: red;
+    color: #d94f70;
+    font-weight: 800;
 }
 
 .helperText {
-    color: #f00;
+    min-height: 16px;
+    color: #d94f70;
     font-size: 12px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
+    font-weight: 500;
+    line-height: 16px;
+}
+
+@media (max-width: 640px) {
+    header {
+        padding: 22px 18px;
+    }
+
+    .wrap {
+        padding: 42px 18px 48px;
+        row-gap: 20px;
+    }
+
+    h2 {
+        font-size: 28px;
+        line-height: 38px;
+    }
 }

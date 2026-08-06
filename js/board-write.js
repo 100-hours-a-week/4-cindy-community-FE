@@ -60,10 +60,10 @@ const observeSignupData = () => {
     const { title, content } = boardWrite;
     if (!title || !content || title === '' || content === '') {
         submitButton.disabled = true;
-        submitButton.style.backgroundColor = '#ACA0EB';
+        submitButton.style.backgroundColor = '#E8CBD4';
     } else {
         submitButton.disabled = false;
-        submitButton.style.backgroundColor = '#7F6AEE';
+        submitButton.style.backgroundColor = '#D94F70';
     }
 };
 
@@ -303,7 +303,7 @@ const init = async () => {
             ? profileImageResult.data.thumbnailUrl
             : DEFAULT_PROFILE_IMAGE;
 
-    prependChild(document.body, Header('커뮤니티', 1, profileImage));
+    prependChild(document.body, Header('Dessert Log 🍰', 1, profileImage));
 
     if (modifyId) {
         isModifyMode = true;

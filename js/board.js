@@ -279,10 +279,10 @@ const inputComment = async () => {
     }
     if (textareaElement.value.trim() === '') {
         commentBtnElement.disabled = true;
-        commentBtnElement.style.backgroundColor = '#ACA0EB';
+        commentBtnElement.style.backgroundColor = '#E8CBD4';
     } else {
         commentBtnElement.disabled = false;
-        commentBtnElement.style.backgroundColor = '#7F6AEE';
+        commentBtnElement.style.backgroundColor = '#D94F70';
     }
 };
 
@@ -313,7 +313,7 @@ const init = async () => {
                 ? profileImageResult.data.thumbnailUrl
                 : DEFAULT_PROFILE_IMAGE;
 
-        prependChild(document.body, Header('커뮤니티', 2, profileImage));
+        prependChild(document.body, Header('Dessert Log 🍰', 2, profileImage));
 
         const pageId = getQueryString('id');
 
