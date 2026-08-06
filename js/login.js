@@ -75,7 +75,7 @@ const observeSignupData = () => {
         password.length >= MIN_PASSWORD_LENGTH &&
         password.length <= MAX_PASSWORD_LENGTH
     );
-    button.style.backgroundColor = button.disabled ? '#ACA0EB' : '#7F6AEE';
+    button.style.backgroundColor = button.disabled ? '#E8CBD4' : '#D94F70';
 };
 
 const eventSet = () => {
@@ -138,7 +138,7 @@ const init = async () => {
     if (isAuthenticated) return;
 
     observeSignupData();
-    prependChild(document.body, Header('커뮤니티', 0));
+    prependChild(document.body, Header('Dessert Log 🍰', 0));
     eventSet();
     localStorage.clear();
 };

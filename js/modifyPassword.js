@@ -24,10 +24,10 @@ const observeData = () => {
     //비밀번호와 비밀번호 확인이 유효하고 일치하는지 확인
     if (!password || !confirmPassword || password !== confirmPassword) {
         button.disabled = true;
-        button.style.backgroundColor = '#ACA0EB';
+        button.style.backgroundColor = '#E8CBD4';
     } else {
         button.disabled = false;
-        button.style.backgroundColor = '#7F6AEE';
+        button.style.backgroundColor = '#D94F70';
     }
 };
 
@@ -129,7 +129,7 @@ const init = async () => {
             : DEFAULT_PROFILE_IMAGE;
 
     button.addEventListener('click', modifyPassword);
-    prependChild(document.body, Header('커뮤니티', 1, profileImage));
+    prependChild(document.body, Header('Dessert Log 🍰', 1, profileImage));
     addEventForInputElements();
     observeData();
 };

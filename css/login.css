@@ -1,136 +1,220 @@
 @import url('./common/layout.css');
 @import url('../component/header/header.css');
 
-.title {
-    font-size: 32px;
-    line-height: 38.41px;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-    color: #000000;
-    margin-bottom: 67px;
+body {
+    display: block;
+    min-height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background-color: #f6f7fb;
 }
 
-article {
+header {
+    position: sticky;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
     width: 100%;
-    max-width: 360px;
+    padding: 22px max(24px, calc((100vw - 880px) / 2));
+    border-bottom: 1px solid #eceff4;
+    background-color: rgba(255, 255, 255, 0.96);
+}
+
+header h1 {
+    color: #17151a;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    text-align: center;
+}
+
+.wrap {
+    width: min(880px, 100%);
+    min-height: calc(100vh - 77px);
+    margin: 0 auto;
+    padding: 64px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    row-gap: 35px;
-}
-
-.inputBox {
-    display: flex;
-    flex-direction: column;
-    row-gap: 8px;
-    width: 100%;
-
-    position: relative;
-}
-
-.inputBox label {
-    font-size: 15px;
-    line-height: 17px;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-    color: #000000;
-}
-.inputBox input {
-    font-size: 14px;
-    color: #000000;
-    line-height: 16.8px;
-    width: 100%;
-    padding: 8px 10px;
-
-    border: 1px solid #000000;
-    border-radius: 4px;
-
+    justify-content: flex-start;
     background-color: transparent;
 }
 
-.inputBox input[type='text'] {
-    flex-grow: 1; /* 입력 필드가 가능한 많은 공간을 차지하도록 함 */
-    padding-right: 10px; /* 오른쪽에 Lottie 애니메이션을 위한 공간 확보 */
+.background {
+    display: none;
 }
+
+.eyebrow {
+    color: #d94f70;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 16px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.title {
+    max-width: 520px;
+    margin-top: 12px;
+    margin-bottom: 34px;
+    color: #17151a;
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 48px;
+    text-align: center;
+}
+
+article {
+    width: min(420px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    row-gap: 26px;
+}
+
+.defaultText {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid #dfe3ea;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #4f5663;
+    font-size: 15px;
+    line-height: 24px;
+}
+
+.inputBox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    row-gap: 9px;
+    width: 100%;
+}
+
+.inputBox label {
+    color: #242832;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 18px;
+}
+
+.inputBox input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid #dfe3ea;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #17151a;
+    font-size: 15px;
+    line-height: 24px;
+    outline: none;
+}
+
+.inputBox input::placeholder {
+    color: #9aa2af;
+}
+
+.inputBox input:focus {
+    border-color: #17151a;
+    box-shadow: 0 0 0 3px rgba(23, 21, 26, 0.08);
+}
+
+.inputBox input[type='text'] {
+    flex-grow: 1;
+    padding-right: 38px;
+}
+
 .inputBox .lottie {
     position: absolute;
-    right: 10px; /* 입력 필드 오른쪽 끝에서 10px 떨어진 위치 */
-    top: 50%; /* 상단에서 50% 위치 */
-
-    width: 20px; /* Lottie 애니메이션 크기, 필요에 따라 조정 */
-    height: 20px; /* Lottie 애니메이션 크기, 필요에 따라 조정 */
+    right: 12px;
+    top: 38px;
+    width: 20px;
+    height: 20px;
 }
 
 .inputBox input[type='file'] {
+    min-height: auto;
+    padding: 12px 0;
     border: none;
-    padding: 8px 0px;
+    background-color: transparent;
 }
 
 .inputBox > .helperText {
     position: absolute;
-    bottom: -4px;
+    bottom: -6px;
     transform: translate(0, 100%);
-
-    color: #f00;
+    color: #d94f70;
     font-size: 12px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
+    font-weight: 500;
+    line-height: 16px;
 }
 
 .buttons {
     position: relative;
     display: flex;
     flex-direction: column;
+    row-gap: 12px;
     width: 100%;
-    margin-top: 42px;
+    margin-top: 24px;
 }
+
 .buttons p {
     position: absolute;
-    top: -4px;
+    top: -6px;
     transform: translate(0, -100%);
-    color: #f00;
+    color: #d94f70;
     font-size: 12px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
+    font-weight: 500;
+    line-height: 16px;
 }
+
 .buttons button,
-a {
-    font-size: 14px;
-    cursor: pointer;
+.buttons a {
     width: 100%;
-    height: 33px;
+    height: 48px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
 }
 
 .buttons button {
-    background-color: #aca0eb;
-    border-radius: 4px;
     border: none;
-
+    background-color: #e8cbd4;
     color: #ffffff;
-    font-weight: 700;
+    font-weight: 800;
+}
+
+.buttons button:not(:disabled):hover {
+    background-color: #c93f60 !important;
 }
 
 .buttons a {
-    color: #000000;
-    font-weight: 400;
+    border: 1px solid #dfe3ea;
+    background-color: #ffffff;
+    color: #4f5663;
+    font-weight: 700;
+}
+
+.buttons a:hover {
+    color: #17151a;
+    border-color: #c7ccd6;
 }
 
 .deleteFile {
     cursor: pointer;
     padding-left: 10px;
-    color: red;
+    color: #d94f70;
 }
 
 #toastContainer {
-    /* position: fixed;
-    top: 0;
-    right: 0; */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -140,14 +224,14 @@ a {
 }
 
 .toastMessage {
-    background-color: #7f6aee;
-    color: #ffffff;
-    padding: 10px 20px;
-    margin-bottom: 5px;
     display: inline-block;
+    margin-bottom: 5px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background-color: #d94f70;
+    color: #ffffff;
     opacity: 0;
     transition: opacity 0.5s;
-    border-radius: 30px;
 }
 
 .profileUploadContainer {
@@ -155,7 +239,7 @@ a {
     display: inline-block;
     width: 100px;
     height: 100px;
-    overflow: visible; /* X 버튼이 바깥으로 나오도록 */
+    overflow: visible;
     border-radius: 50%;
 }
 
@@ -165,9 +249,9 @@ a {
     right: -4px;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
     border: 2px solid #fff;
-    background-color: #ff4d4f;
+    border-radius: 50%;
+    background-color: #d94f70;
     color: #fff;
     font-size: 16px;
     font-weight: 700;
@@ -178,35 +262,57 @@ a {
     align-items: center;
     justify-content: center;
     z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 8px 18px rgba(23, 21, 26, 0.18);
+    transition:
+        transform 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .profileRemoveButton:hover {
-    background-color: #ff1a1a;
-    transform: scale(1.1);
+    background-color: #c93f60;
+    transform: scale(1.08);
 }
 
 .profileUploadButton {
-    display: block;
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.55);
-    color: white;
+    display: block;
     padding: 4px 10px;
     border: 1px solid rgba(255, 255, 255, 0.9);
-    cursor: pointer;
+    border-radius: 16px;
+    background-color: rgba(23, 21, 26, 0.62);
+    color: white;
+    font-size: 12px;
     text-align: center;
     white-space: nowrap;
-    border-radius: 16px;
-    font-size: 12px;
+    cursor: pointer;
     z-index: 2;
 }
+
 #profilePreview {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
+}
+
+@media (max-width: 640px) {
+    header {
+        padding: 22px 18px;
+    }
+
+    header h1 {
+        text-align: center;
+    }
+
+    .wrap {
+        padding: 42px 18px 48px;
+    }
+
+    .title {
+        font-size: 30px;
+        line-height: 40px;
+    }
 }

@@ -2,169 +2,258 @@
 @import url('../component/board/boardItem.css');
 @import url('../component/header/header.css');
 
-.boardList {
+body {
+    display: block;
+    min-height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background-color: #f6f7fb;
+}
+
+header {
+    position: sticky;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
     width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    row-gap: 16px;
-    overflow-y: scroll;
+    padding: 22px max(28px, calc((100vw - 1120px) / 2));
+    border-bottom: 1px solid #eceff4;
+    background-color: rgba(255, 255, 255, 0.96);
+}
+
+header h1 {
+    color: #17151a;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    text-align: center;
+}
+
+.wrap {
+    width: min(1120px, 100%);
+    min-height: calc(100vh - 77px);
+    margin: 0 auto;
+    padding: 54px 28px 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 28px;
+    align-items: start;
+    background-color: transparent;
+}
+
+.background {
+    display: none;
 }
 
 .write {
+    width: 100%;
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* 중앙 정렬에서 시작 정렬로 변경 */
-    justify-content: center;
-    row-gap: 24px;
-    padding: 40px 0 10px 0;
-    width: 100%; /* .write 영역이 부모 컨테이너의 전체 너비를 차지하도록 설정 */
+    align-items: center;
+    row-gap: 16px;
+    padding: 34px 0 8px;
+}
+
+.eyebrow {
+    color: #d94f70;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 16px;
+    text-transform: uppercase;
 }
 
 .write h2 {
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 32px;
-    letter-spacing: -0.02em;
-    color: rgba(69, 72, 84, 1);
+    max-width: 620px;
+    color: #17151a;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 60px;
     text-align: center;
-    width: 100%; /* h2도 중앙 정렬을 유지하도록 설정 */
 }
 
-.write a {
-    margin-left: auto; /* 링크를 오른쪽으로 밀어붙임 */
-    margin-right: 10px;
-    padding: 7px 32px;
-    border-radius: 18px;
-    background-color: #aca0eb;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 26px;
-    letter-spacing: -0.02em;
-    color: #ffffff;
+.intro {
+    max-width: 560px;
+    color: #68707f;
+    font-size: 17px;
+    line-height: 28px;
+    text-align: center;
 }
 
 .searchRow {
-    width: 100%;
+    width: min(620px, 100%);
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.searchBox {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+}
+
+.searchInput {
+    width: 100%;
+    height: 50px;
+    padding: 0 48px 0 16px;
+    border: 1px solid #dfe3ea;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #17151a;
+    font-size: 15px;
+    line-height: 24px;
+    outline: none;
+}
+
+.searchInput::placeholder {
+    color: #9aa2af;
+}
+
+.searchInput:focus {
+    border-color: #17151a;
+    box-shadow: 0 0 0 3px rgba(23, 21, 26, 0.08);
+}
+
+.searchButton {
+    position: absolute;
+    right: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 7px;
+    background-color: #17151a;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.searchButton:hover {
+    background-color: #d94f70;
+}
+
+.searchButton:focus-visible,
+.sortSelect:focus-visible {
+    outline: 2px solid #d94f70;
+    outline-offset: 2px;
+}
+
+.write a {
+    flex: 0 0 auto;
+    padding: 15px 18px;
+    border-radius: 8px;
+    background-color: #d94f70;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 20px;
+}
+
+.write a:hover {
+    background-color: #c93f60;
 }
 
 .sortRow {
-    width: 100%;
+    width: min(620px, 100%);
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: -12px;
-    margin-bottom: 8px;
+    margin-top: -4px;
 }
 
 .sortBox {
-    margin-right: 10px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
-    border-radius: 12px;
-    border: 1px solid #e5e5e5;
+    padding: 7px 10px;
+    border: 1px solid #dfe3ea;
+    border-radius: 8px;
     background-color: #ffffff;
 }
 
 .sortIcon {
-    color: #7f6aee;
+    color: #d94f70;
 }
 
-.sortLabel {
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: -0.02em;
-    color: #454854;
+.sortLabel,
+.sortSelect {
+    color: #4f5663;
+    font-size: 13px;
+    line-height: 18px;
 }
 
 .sortSelect {
+    padding: 2px 4px;
     border: none;
     background: transparent;
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: -0.02em;
-    color: #454854;
-    padding: 2px 4px;
     outline: none;
     cursor: pointer;
-}
-
-.sortSelect:focus-visible {
-    outline: 2px solid #7f6aee;
-    outline-offset: 2px;
-    border-radius: 6px;
 }
 
 .isHidden {
     display: none;
 }
 
-.searchBox {
-    flex: 1 1 auto;
-    max-width: 520px;
-    margin-left: 10px;
-    position: relative;
-}
-
-.searchInput {
-    width: 100%;
-    height: 40px;
-    padding: 0 44px 0 16px;
-    border-radius: 12px;
-    border: 1px solid #e5e5e5;
-    background-color: #ffffff;
-    font-size: 16px;
-    line-height: 26px;
-    letter-spacing: -0.02em;
-    color: #454854;
-    outline: none;
-}
-
-.searchInput::placeholder {
-    color: #a9acb8;
-}
-
-.searchInput:focus {
-    border-color: #aca0eb;
-    box-shadow: 0 0 0 3px rgba(172, 160, 235, 0.2);
-}
-
-.searchButton {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 8px;
-    background-color: transparent;
-    color: #7f6aee;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.searchButton:hover {
-    background-color: rgba(172, 160, 235, 0.15);
-}
-
-.searchButton:focus-visible {
-    outline: 2px solid #7f6aee;
-    outline-offset: 2px;
-}
-
 b {
-    font-weight: 700;
+    color: inherit;
+    font-weight: 800;
 }
 
-.write a:hover {
-    background-color: #7f6aee; /* 여기서 색상을 원하는 색으로 변경하세요 */
+.boardList {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 10px 0 0;
+    overflow: visible;
+}
+
+@media (max-width: 760px) {
+    header {
+        padding: 22px 18px;
+    }
+
+    header h1 {
+        text-align: center;
+    }
+
+    .wrap {
+        display: flex;
+        flex-direction: column;
+        padding: 32px 18px 44px;
+    }
+
+    .write {
+        padding-top: 18px;
+    }
+
+    .write h2 {
+        font-size: 32px;
+        line-height: 42px;
+    }
+
+    .intro {
+        font-size: 15px;
+        line-height: 24px;
+    }
+
+    .searchRow {
+        width: 100%;
+    }
+
+    .boardList {
+        display: flex;
+        flex-direction: column;
+        row-gap: 12px;
+    }
 }

@@ -175,7 +175,7 @@ const init = async () => {
 
         prependChild(
             document.body,
-            Header('Community', 0, profileImageUrl),
+            Header('Dessert Log 🍰', 0, profileImageUrl),
         );
 
         updateSortVisibility();
