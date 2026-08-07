@@ -101,6 +101,10 @@ header h1 {
     margin-left: 0;
 }
 
+.head .mod.hidden {
+    display: none;
+}
+
 .head .mod button,
 .commentInfoHeader span button {
     padding: 6px 12px;
