@@ -12,7 +12,7 @@ replicaCount: 2
 
 image:
   repository: 719905537984.dkr.ecr.ap-northeast-2.amazonaws.com/community-board-fe
-  tag: d2fd4bb
+  tag: 2bf5f14
   pullPolicy: IfNotPresent
 
 service:
