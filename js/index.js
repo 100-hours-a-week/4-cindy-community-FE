@@ -4,21 +4,52 @@ import Header from '../component/header/header.js';
 import {
     authCheck,
     getProfileImageFileUrl,
+    padTo2Digits,
     prependChild,
 } from '../utils/function.js';
-import { getPosts, searchPosts } from '../api/indexRequest.js';
+import {
+    getPosts,
+    getTrendingPosts,
+    searchPosts,
+} from '../api/indexRequest.js';
 import { getProfileImage } from '../api/profileImageRequest.js';
 
 const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
 const HTTP_NOT_AUTHORIZED = 401;
 const SCROLL_THRESHOLD = 0.9;
 const ITEMS_PER_LOAD = 5;
+const TRENDING_ITEMS_LIMIT = 10;
+const TRENDING_PERIOD_DAYS = 7;
 const DEFAULT_SORT = 'recent';
 let currentKeyword = '';
 let currentSort = DEFAULT_SORT;
 let offset = 0;
 let isEnd = false;
 let isProcessing = false;
+
+const formatTrendingDateTime = date => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    return `${padTo2Digits(month)}.${padTo2Digits(day)} ${padTo2Digits(hours)}:${padTo2Digits(minutes)}`;
+};
+
+const getTrendingPeriodText = () => {
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - TRENDING_PERIOD_DAYS);
+
+    return `최근 ${TRENDING_PERIOD_DAYS}일 기준 · ${formatTrendingDateTime(startDate)} ~ ${formatTrendingDateTime(endDate)}`;
+};
+
+const setTrendingPeriodText = () => {
+    const trendingPeriod = document.querySelector('#trendingPeriod');
+    if (trendingPeriod) {
+        trendingPeriod.textContent = getTrendingPeriodText();
+    }
+};
 
 const updateSortVisibility = () => {
     const sortRow = document.querySelector('#searchSortRow');
@@ -45,9 +76,8 @@ const getBoardItem = async (offsetValue = 0, limitValue = 5) => {
     return result.data;
 };
 
-const setBoardItem = boardData => {
-    const boardList = document.querySelector('.boardList');
-    if (boardList && boardData) {
+const appendBoardItems = (container, boardData) => {
+    if (container && boardData) {
         boardData.forEach(data => {
             const boardItem = BoardItem(
                 data.postId,
@@ -60,9 +90,108 @@ const setBoardItem = boardData => {
                 data.likeCount ?? 0,
             );
             if (boardItem) {
-                boardList.appendChild(boardItem);
+                container.appendChild(boardItem);
             }
         });
+    }
+};
+
+const setBoardItem = boardData => {
+    appendBoardItems(document.querySelector('.boardList'), boardData);
+};
+
+const hideTrendingSection = () => {
+    const trendingSection = document.querySelector('.trendingSection');
+    if (trendingSection) {
+        trendingSection.classList.add('isHidden');
+    }
+};
+
+const setTrendingItems = trendingData => {
+    const trendingList = document.querySelector('.trendingList');
+    if (!trendingList || !trendingData) return;
+
+    trendingData.forEach((data, index) => {
+        const boardItem = BoardItem(
+            data.postId,
+            data.updatedAt,
+            data.title,
+            data.views,
+            data.nickname,
+            getProfileImageFileUrl(data.userId) || data.profileImageUrl,
+            data.commentCount ?? 0,
+            data.likeCount ?? 0,
+        );
+        if (!boardItem) return;
+
+        boardItem.classList.add('trendingCard');
+        boardItem.setAttribute('aria-roledescription', 'slide');
+        boardItem.setAttribute('aria-label', `${index + 1}위 인기글`);
+
+        const badge = document.createElement('span');
+        badge.className = 'trendingRankBadge';
+        badge.textContent = `TOP ${index + 1}`;
+
+        const boardItemBody = boardItem.querySelector('.boardItem');
+        if (boardItemBody) {
+            boardItemBody.prepend(badge);
+        }
+
+        trendingList.appendChild(boardItem);
+    });
+};
+
+const updateTrendingControls = () => {
+    const trendingList = document.querySelector('.trendingList');
+    const prevButton = document.querySelector('#trendingPrevButton');
+    const nextButton = document.querySelector('#trendingNextButton');
+    if (!trendingList || !prevButton || !nextButton) return;
+
+    const maxScrollLeft = trendingList.scrollWidth - trendingList.clientWidth;
+    prevButton.disabled = trendingList.scrollLeft <= 0;
+    nextButton.disabled = trendingList.scrollLeft >= maxScrollLeft - 1;
+};
+
+const addTrendingControlEvent = () => {
+    const trendingList = document.querySelector('.trendingList');
+    const prevButton = document.querySelector('#trendingPrevButton');
+    const nextButton = document.querySelector('#trendingNextButton');
+    if (!trendingList || !prevButton || !nextButton) return;
+
+    const scrollByPage = direction => {
+        trendingList.scrollBy({
+            left: direction * trendingList.clientWidth,
+            behavior: 'smooth',
+        });
+    };
+
+    prevButton.addEventListener('click', () => scrollByPage(-1));
+    nextButton.addEventListener('click', () => scrollByPage(1));
+    trendingList.addEventListener('scroll', updateTrendingControls);
+    window.addEventListener('resize', updateTrendingControls);
+    updateTrendingControls();
+};
+
+const loadTrendingSection = async () => {
+    try {
+        const result = await getTrendingPosts(0, TRENDING_ITEMS_LIMIT);
+        if (!result.ok) {
+            throw new Error('Failed to load trending post list.');
+        }
+
+        const items = result.data && Array.isArray(result.data.content)
+            ? result.data.content
+            : [];
+        if (!items || items.length === 0) {
+            hideTrendingSection();
+            return;
+        }
+
+        setTrendingItems(items);
+        updateTrendingControls();
+    } catch (error) {
+        console.error('Error fetching trending items:', error);
+        hideTrendingSection();
     }
 };
 
@@ -179,6 +308,9 @@ const init = async () => {
         );
 
         updateSortVisibility();
+        setTrendingPeriodText();
+        addTrendingControlEvent();
+        loadTrendingSection();
         await loadBoardItems({ reset: true });
 
         addSearchEvent();

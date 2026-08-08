@@ -11,6 +11,16 @@ export const getPosts = (offset, limit) => {
     return result;
 };
 
+export const getTrendingPosts = (page, size) => {
+    const result = requestJson(
+        `${getServerUrl()}/posts/trending?page=${page}&size=${size}`,
+        {
+            credentials: 'include',
+        },
+    );
+    return result;
+};
+
 export const searchPosts = (keyword, offset = 0, limit = 5, sort = 'recent') => {
     const query = new URLSearchParams({
         keyword,
