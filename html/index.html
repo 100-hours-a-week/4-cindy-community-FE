@@ -33,6 +33,13 @@
                     minlength="2"
                 />
                 <button
+                    class="searchClearButton isHidden"
+                    type="button"
+                    aria-label="검색어 지우기"
+                >
+                    &times;
+                </button>
+                <button
                     class="searchButton"
                     type="button"
                     aria-label="검색"
@@ -119,6 +126,7 @@
         <section class="trendingList"></section>
     </section>
     <section class="boardList"></section>
+    <p id="listStatus" class="listStatus isHidden" role="status"></p>
 </section>
 <div class="background"></div>
 </body>

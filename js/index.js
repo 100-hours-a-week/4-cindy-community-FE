@@ -10,7 +10,6 @@ import {
 import {
     getPosts,
     getTrendingPosts,
-    searchPosts,
 } from '../api/indexRequest.js';
 import { getProfileImage } from '../api/profileImageRequest.js';
 
@@ -18,6 +17,8 @@ const DEFAULT_PROFILE_IMAGE = '/public/profile_default.svg';
 const HTTP_NOT_AUTHORIZED = 401;
 const SCROLL_THRESHOLD = 0.9;
 const ITEMS_PER_LOAD = 5;
+const SEARCH_FETCH_LIMIT = 50;
+const MAX_SEARCH_FETCH_PAGES = 100;
 const TRENDING_ITEMS_LIMIT = 10;
 const TRENDING_PERIOD_DAYS = 7;
 const DEFAULT_SORT = 'recent';
@@ -26,6 +27,8 @@ let currentSort = DEFAULT_SORT;
 let offset = 0;
 let isEnd = false;
 let isProcessing = false;
+let cachedPosts = null;
+let cachedPostsPromise = null;
 
 const formatTrendingDateTime = date => {
     const month = date.getMonth() + 1;
@@ -59,17 +62,135 @@ const updateSortVisibility = () => {
     sortRow.setAttribute('aria-hidden', String(!isSearching));
 };
 
+const updateClearButtonVisibility = () => {
+    const searchInput = document.querySelector('#searchInput');
+    const clearButton = document.querySelector('.searchClearButton');
+    if (!searchInput || !clearButton) return;
+
+    const hasInputValue = searchInput.value.trim().length > 0;
+    clearButton.classList.toggle('isHidden', !hasInputValue);
+};
+
+const setListStatus = (message = '', { isError = false } = {}) => {
+    const statusElement = document.querySelector('#listStatus');
+    if (!statusElement) return;
+
+    statusElement.textContent = message;
+    statusElement.classList.toggle('isHidden', message.length === 0);
+    statusElement.classList.toggle('isError', isError);
+};
+
+const getBoardItemCount = () => {
+    const boardList = document.querySelector('.boardList');
+    return boardList ? boardList.children.length : 0;
+};
+
+const normalizeText = value => String(value ?? '').trim().toLowerCase();
+
+const getPostDateValue = post => {
+    const dateValue = Date.parse(post.updatedAt || post.createdAt || '');
+    return Number.isNaN(dateValue) ? 0 : dateValue;
+};
+
+const hasNextPage = (postList, items) => {
+    if (!items || items.length === 0) return false;
+    if (postList.hasNext !== undefined) return Boolean(postList.hasNext);
+    if (postList.last !== undefined) return !postList.last;
+    return items.length >= SEARCH_FETCH_LIMIT;
+};
+
+const fetchAllPosts = async () => {
+    if (cachedPosts) return cachedPosts;
+    if (cachedPostsPromise) return cachedPostsPromise;
+
+    cachedPostsPromise = (async () => {
+        const allPosts = [];
+        let page = 0;
+        let shouldFetchNext = true;
+
+        while (shouldFetchNext && page < MAX_SEARCH_FETCH_PAGES) {
+            const result = await getPosts(page, SEARCH_FETCH_LIMIT);
+            if (!result.ok) {
+                throw new Error('Failed to load all post list.');
+            }
+
+            const postList = result.data || {};
+            const items = Array.isArray(postList.content)
+                ? postList.content
+                : [];
+            allPosts.push(...items);
+            shouldFetchNext = hasNextPage(postList, items);
+            page += 1;
+        }
+
+        cachedPosts = allPosts;
+        return allPosts;
+    })().finally(() => {
+        cachedPostsPromise = null;
+    });
+
+    return cachedPostsPromise;
+};
+
+const getSearchText = post => normalizeText([
+    post.title,
+    post.nickname,
+    post.content,
+].join(' '));
+
+const getRelevanceScore = (post, keyword) => {
+    const normalizedKeyword = normalizeText(keyword);
+    const title = normalizeText(post.title);
+    const nickname = normalizeText(post.nickname);
+    const content = normalizeText(post.content);
+
+    let score = 0;
+    if (title === normalizedKeyword) score += 100;
+    if (title.startsWith(normalizedKeyword)) score += 50;
+    if (title.includes(normalizedKeyword)) score += 30;
+    if (nickname.includes(normalizedKeyword)) score += 12;
+    if (content.includes(normalizedKeyword)) score += 8;
+
+    return score;
+};
+
+const sortSearchPosts = (posts, keyword) => {
+    return [...posts].sort((first, second) => {
+        if (currentSort === 'relevance') {
+            const scoreDiff =
+                getRelevanceScore(second, keyword) -
+                getRelevanceScore(first, keyword);
+            if (scoreDiff !== 0) return scoreDiff;
+        }
+
+        return getPostDateValue(second) - getPostDateValue(first);
+    });
+};
+
+const getClientSearchResult = async (offsetValue, limitValue) => {
+    const keyword = currentKeyword.trim();
+    const normalizedKeyword = normalizeText(keyword);
+    const allPosts = await fetchAllPosts();
+    const filteredPosts = allPosts.filter(post =>
+        getSearchText(post).includes(normalizedKeyword),
+    );
+    const sortedPosts = sortSearchPosts(filteredPosts, keyword);
+    const startIndex = offsetValue * limitValue;
+    const content = sortedPosts.slice(startIndex, startIndex + limitValue);
+
+    return {
+        content,
+        hasNext: startIndex + limitValue < sortedPosts.length,
+    };
+};
+
 // getBoardItem 함수
 const getBoardItem = async (offsetValue = 0, limitValue = 5) => {
-    const result =
-        currentKeyword.trim() === ''
-            ? await getPosts(offsetValue, limitValue)
-            : await searchPosts(
-                  currentKeyword,
-                  offsetValue,
-                  limitValue,
-                  currentSort,
-              );
+    if (currentKeyword.trim() !== '') {
+        return getClientSearchResult(offsetValue, limitValue);
+    }
+
+    const result = await getPosts(offsetValue, limitValue);
     if (!result.ok) {
         throw new Error('Failed to load post list.');
     }
@@ -211,6 +332,7 @@ const loadBoardItems = async ({ reset = false } = {}) => {
             offset = 0;
             isEnd = false;
             resetBoardList();
+            setListStatus('게시글을 불러오는 중입니다.');
         }
         const postList = await getBoardItem(offset, ITEMS_PER_LOAD);
         const items = postList && Array.isArray(postList.content)
@@ -218,9 +340,16 @@ const loadBoardItems = async ({ reset = false } = {}) => {
             : [];
         if (!items || items.length === 0) {
             isEnd = true;
+            if (getBoardItemCount() === 0) {
+                const emptyMessage = currentKeyword.trim().length > 0
+                    ? `"${currentKeyword}" 검색 결과가 없습니다.`
+                    : '아직 등록된 게시글이 없습니다.';
+                setListStatus(emptyMessage);
+            }
             return;
         }
         setBoardItem(items);
+        setListStatus();
         isEnd =
             postList.hasNext === false ||
             postList.last === true ||
@@ -229,6 +358,9 @@ const loadBoardItems = async ({ reset = false } = {}) => {
     } catch (error) {
         console.error('Error fetching items:', error);
         isEnd = true;
+        if (reset || getBoardItemCount() === 0) {
+            setListStatus('게시글을 불러오지 못했습니다.', { isError: true });
+        }
     } finally {
         isProcessing = false;
     }
@@ -237,6 +369,7 @@ const loadBoardItems = async ({ reset = false } = {}) => {
 const addSearchEvent = () => {
     const searchInput = document.querySelector('#searchInput');
     const searchButton = document.querySelector('.searchButton');
+    const clearButton = document.querySelector('.searchClearButton');
     if (!searchInput || !searchButton) return;
 
     const runSearch = async () => {
@@ -247,16 +380,28 @@ const addSearchEvent = () => {
         }
         currentKeyword = trimmedKeyword;
         updateSortVisibility();
+        updateClearButtonVisibility();
         await loadBoardItems({ reset: true });
     };
 
     searchButton.addEventListener('click', runSearch);
+    searchInput.addEventListener('input', updateClearButtonVisibility);
     searchInput.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
             runSearch();
         }
     });
+    if (clearButton) {
+        clearButton.addEventListener('click', async () => {
+            searchInput.value = '';
+            searchInput.focus();
+            updateClearButtonVisibility();
+            if (currentKeyword.trim().length > 0) {
+                await runSearch();
+            }
+        });
+    }
 };
 
 const addSortEvent = () => {
