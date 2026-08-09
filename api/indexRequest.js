@@ -20,19 +20,3 @@ export const getTrendingPosts = (page, size) => {
     );
     return result;
 };
-
-export const searchPosts = (keyword, offset = 0, limit = 5, sort = 'recent') => {
-    const query = new URLSearchParams({
-        keyword,
-        offset,
-        limit,
-        sort,
-    });
-    const result = requestJson(
-        `${getServerUrl()}/v1/posts/search?${query.toString()}`,
-        {
-            credentials: 'include',
-        },
-    );
-    return result;
-};

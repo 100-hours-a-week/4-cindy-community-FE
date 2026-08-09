@@ -100,7 +100,7 @@ header h1 {
 .searchInput {
     width: 100%;
     height: 50px;
-    padding: 0 48px 0 16px;
+    padding: 0 88px 0 16px;
     border: 1px solid #dfe3ea;
     border-radius: 8px;
     background-color: #ffffff;
@@ -140,7 +140,36 @@ header h1 {
     background-color: #d94f70;
 }
 
+.searchClearButton {
+    position: absolute;
+    right: 47px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 7px;
+    background-color: transparent;
+    color: #8a909c;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.searchClearButton:hover {
+    background-color: #f0f2f6;
+    color: #17151a;
+}
+
+.searchClearButton.isHidden {
+    display: none;
+}
+
 .searchButton:focus-visible,
+.searchClearButton:focus-visible,
 .sortSelect:focus-visible {
     outline: 2px solid #d94f70;
     outline-offset: 2px;
@@ -389,6 +418,29 @@ b {
     overflow: visible;
 }
 
+.listStatus {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 28px 16px;
+    border: 1px solid #e8ebf0;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #68707f;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: center;
+}
+
+.listStatus.isError {
+    border-color: #f2b6c5;
+    color: #d94f70;
+}
+
+.listStatus.isHidden {
+    display: none;
+}
+
 @media (max-width: 760px) {
     header {
         padding: 22px 18px;
@@ -443,5 +495,9 @@ b {
         display: flex;
         flex-direction: column;
         row-gap: 12px;
+    }
+
+    .listStatus {
+        padding: 22px 14px;
     }
 }
